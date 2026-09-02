@@ -111,12 +111,8 @@ function Members() {
             </div>
 
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-green-600">
-                Church Attendance
-              </p>
-
               <h1 className="text-2xl font-extrabold tracking-tight text-slate-800">
-                Members
+                MEMBERS
               </h1>
             </div>
           </div>
