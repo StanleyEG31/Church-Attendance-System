@@ -1,104 +1,106 @@
-import { useEffect, useState } from "react"
-import { db } from "../db/db"
+import { useEffect, useState } from "react";
+import { db } from "../db/db";
+import churchLogo from "../assets/COTF-LOGO.png";
 
 // TEMPORARY TEST MODE
 // Change this to false before final deployment.
-const TEST_MODE = true
+const TEST_MODE = true;
 
 function getSessionDate() {
-  const today = new Date()
+  const today = new Date();
 
   if (TEST_MODE) {
-    return today.toISOString().split("T")[0]
+    return today.toISOString().split("T")[0];
   }
 
   if (today.getDay() !== 0) {
-    return null
+    return null;
   }
 
-  return today.toISOString().split("T")[0]
+  return today.toISOString().split("T")[0];
 }
 
 function Attendance() {
-  const [selectedGroup, setSelectedGroup] = useState("Adults")
-  const [search, setSearch] = useState("")
-  const [members, setMembers] = useState([])
-  const [attendance, setAttendance] = useState([])
-  const [visitors, setVisitors] = useState([])
-  const [isSunday, setIsSunday] = useState(false)
+  const [selectedGroup, setSelectedGroup] = useState("Adults");
+  const [search, setSearch] = useState("");
+  const [members, setMembers] = useState([]);
+  const [attendance, setAttendance] = useState([]);
+  const [visitors, setVisitors] = useState([]);
+  const [isSunday, setIsSunday] = useState(false);
 
   // Visitor form
-  const [showVisitorForm, setShowVisitorForm] = useState(false)
-  const [visitorName, setVisitorName] = useState("")
-  const [visitorPurpose, setVisitorPurpose] = useState("First Time Visitor")
-  const [visitorInvitedBy, setVisitorInvitedBy] = useState("")
+  const [showVisitorForm, setShowVisitorForm] = useState(false);
+  const [visitorName, setVisitorName] = useState("");
+  const [visitorPurpose, setVisitorPurpose] =
+    useState("First Time Visitor");
+  const [visitorInvitedBy, setVisitorInvitedBy] = useState("");
 
   useEffect(() => {
-    loadData()
-  }, [])
+    loadData();
+  }, []);
 
   const loadData = async () => {
-    const savedMembers = await db.members.toArray()
+    const savedMembers = await db.members.toArray();
 
-    const today = new Date()
-    const sunday = today.getDay() === 0
+    const today = new Date();
+    const sunday = today.getDay() === 0;
 
-    setIsSunday(sunday)
+    setIsSunday(sunday);
 
-    const sessionDate = getSessionDate()
+    const sessionDate = getSessionDate();
 
-    setMembers(savedMembers)
+    setMembers(savedMembers);
 
     if (!sessionDate) {
-      setAttendance([])
-      setVisitors([])
-      return
+      setAttendance([]);
+      setVisitors([]);
+      return;
     }
 
     const savedAttendance = await db.attendance
       .where("date")
       .equals(sessionDate)
-      .toArray()
+      .toArray();
 
     const savedVisitors = await db.visitors
       .where("date")
       .equals(sessionDate)
-      .toArray()
+      .toArray();
 
-    setAttendance(savedAttendance)
-    setVisitors(savedVisitors)
-  }
+    setAttendance(savedAttendance);
+    setVisitors(savedVisitors);
+  };
 
   const markAttendance = async (member) => {
-    const sessionDate = getSessionDate()
+    const sessionDate = getSessionDate();
 
     if (!sessionDate) {
-      return
+      return;
     }
 
     const existingRecord = attendance.find(
-      (record) => record.memberId === member.id
-    )
+      (record) => record.memberId === member.id,
+    );
 
     // Already present
     if (existingRecord) {
       const confirmed = window.confirm(
-        `Remove ${member.name} from today's attendance?`
-      )
+        `Remove ${member.name} from today's attendance?`,
+      );
 
       if (!confirmed) {
-        return
+        return;
       }
 
-      await db.attendance.delete(existingRecord.id)
+      await db.attendance.delete(existingRecord.id);
 
       setAttendance((current) =>
         current.filter(
-          (record) => record.id !== existingRecord.id
-        )
-      )
+          (record) => record.id !== existingRecord.id,
+        ),
+      );
 
-      return
+      return;
     }
 
     // Mark present
@@ -109,9 +111,9 @@ function Attendance() {
       date: sessionDate,
       time: new Date().toLocaleTimeString(),
       status: "Present",
-    }
+    };
 
-    const id = await db.attendance.add(record)
+    const id = await db.attendance.add(record);
 
     setAttendance((current) => [
       ...current,
@@ -119,16 +121,16 @@ function Attendance() {
         ...record,
         id,
       },
-    ])
-  }
+    ]);
+  };
 
   const addVisitor = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    const sessionDate = getSessionDate()
+    const sessionDate = getSessionDate();
 
     if (!sessionDate || !visitorName.trim()) {
-      return
+      return;
     }
 
     const visitor = {
@@ -138,9 +140,9 @@ function Attendance() {
       date: sessionDate,
       time: new Date().toLocaleTimeString(),
       service: "Sunday Morning",
-    }
+    };
 
-    const id = await db.visitors.add(visitor)
+    const id = await db.visitors.add(visitor);
 
     setVisitors((current) => [
       ...current,
@@ -148,154 +150,188 @@ function Attendance() {
         ...visitor,
         id,
       },
-    ])
+    ]);
 
     // Reset form
-    setVisitorName("")
-    setVisitorPurpose("First Time Visitor")
-    setVisitorInvitedBy("")
-    setShowVisitorForm(false)
-  }
+    setVisitorName("");
+    setVisitorPurpose("First Time Visitor");
+    setVisitorInvitedBy("");
+    setShowVisitorForm(false);
+  };
 
   const removeVisitor = async (visitor) => {
     const confirmed = window.confirm(
-      `Remove ${visitor.name} from today's visitors?`
-    )
+      `Remove ${visitor.name} from today's visitors?`,
+    );
 
     if (!confirmed) {
-      return
+      return;
     }
 
-    await db.visitors.delete(visitor.id)
+    await db.visitors.delete(visitor.id);
 
     setVisitors((current) =>
-      current.filter((item) => item.id !== visitor.id)
-    )
-  }
+      current.filter((item) => item.id !== visitor.id),
+    );
+  };
 
   const getGroupCount = (group) => {
     return attendance.filter(
-      (record) => record.group === group
-    ).length
-  }
+      (record) => record.group === group,
+    ).length;
+  };
 
   const filteredMembers = members.filter(
     (member) =>
       member.group === selectedGroup &&
-      member.name.toLowerCase().includes(search.toLowerCase())
-  )
+      member.name.toLowerCase().includes(search.toLowerCase()),
+  );
 
   const isPresent = (memberId) => {
     return attendance.some(
-      (record) => record.memberId === memberId
-    )
-  }
+      (record) => record.memberId === memberId,
+    );
+  };
 
   // Attendance is closed outside Sunday
   if (!isSunday && !TEST_MODE) {
     return (
-      <div className="min-h-screen bg-gray-100 px-4 py-6">
+      <div className="min-h-screen bg-slate-50 px-4 py-6">
         <div className="mx-auto max-w-md">
-          <div className="mt-16 rounded-3xl bg-white p-8 text-center shadow-sm">
 
-            <div className="mb-4 text-5xl">
-              ⛪
+          <div className="mt-16 overflow-hidden rounded-3xl bg-white shadow-md">
+
+            {/* Top Accent */}
+            <div className="h-2 bg-blue-600" />
+
+            <div className="p-8 text-center">
+
+              <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-3xl bg-white p-2 shadow-sm ring-1 ring-slate-100">
+                <img
+                  src={churchLogo}
+                  alt="COTF Church Logo"
+                  className="h-full w-full object-contain"
+                />
+              </div>
+
+              <h1 className="text-2xl font-bold text-slate-800">
+                Sunday Morning Service
+              </h1>
+
+              <div className="mx-auto mt-5 h-1 w-12 rounded-full bg-yellow-400" />
+
+              <p className="mt-5 font-medium text-slate-600">
+                Attendance is currently closed.
+              </p>
+
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                Attendance can only be recorded during the
+                Sunday morning service.
+              </p>
+
             </div>
-
-            <h1 className="text-2xl font-bold text-gray-800">
-              Sunday Morning Service
-            </h1>
-
-            <div className="mx-auto mt-5 h-px w-16 bg-gray-200" />
-
-            <p className="mt-5 text-gray-600">
-              Attendance is currently closed.
-            </p>
-
-            <p className="mt-2 text-sm text-gray-400">
-              Attendance can only be recorded during the
-              Sunday morning service.
-            </p>
-
           </div>
+
         </div>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 px-4 py-6 pb-8">
+    <div className="min-h-screen bg-slate-50 px-4 py-5 pb-8">
       <div className="mx-auto max-w-md">
 
         {/* Header */}
-        <div className="mb-6 text-center">
+        <div className="mb-6">
 
-          <div className="mb-2 text-4xl">
-            ⛪
+          <div className="flex items-center gap-3">
+
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white p-1.5 shadow-sm ring-1 ring-slate-100">
+              <img
+                src={churchLogo}
+                alt="COTF Church Logo"
+                className="h-full w-full object-contain"
+              />
+            </div>
+
+            <div className="min-w-0">
+
+              <h1 className="text-xl font-bold text-slate-800">
+                Church Attendance
+              </h1>
+
+              <p className="mt-0.5 text-sm text-slate-500">
+                Sunday Morning Service
+              </p>
+
+            </div>
+
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-800">
-            Church Attendance
-          </h1>
-
-          <p className="mt-1 text-sm text-gray-500">
-            Sunday Morning Service
-          </p>
-
           {TEST_MODE && (
-            <p className="mt-2 text-xs font-semibold text-orange-500">
-              TEST MODE
-            </p>
+            <div className="mt-4 inline-flex rounded-full bg-yellow-100 px-3 py-1.5">
+              <span className="text-xs font-bold text-yellow-700">
+                TEST MODE
+              </span>
+            </div>
           )}
 
         </div>
 
         {/* Total Attendance */}
-        <div className="mb-4 rounded-2xl bg-white p-5 text-center shadow-sm">
+        <div className="relative mb-4 overflow-hidden rounded-3xl bg-blue-600 p-6 text-center shadow-md">
 
-          <p className="text-sm font-medium text-gray-500">
-            Today's Attendance
-          </p>
+          {/* Decorative circles */}
+          <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/10" />
+          <div className="absolute -bottom-10 -left-8 h-32 w-32 rounded-full bg-white/10" />
 
-          <p className="mt-1 text-5xl font-bold text-blue-600">
-            {attendance.length}
-          </p>
+          <div className="relative">
 
-          <p className="mt-1 text-sm text-gray-400">
-            Members Present
-          </p>
+            <p className="text-sm font-semibold text-blue-100">
+              Today's Attendance
+            </p>
+
+            <p className="mt-1 text-6xl font-black text-white">
+              {attendance.length}
+            </p>
+
+            <p className="mt-1 text-sm text-blue-100">
+              Members Present
+            </p>
+
+          </div>
 
         </div>
 
         {/* Group Counts */}
         <div className="mb-5 grid grid-cols-3 gap-2">
 
-          <div className="rounded-2xl bg-white p-3 text-center shadow-sm">
-            <p className="text-2xl font-bold text-gray-800">
+          <div className="rounded-2xl border border-green-100 bg-green-50 p-3 text-center">
+            <p className="text-2xl font-black text-green-700">
               {getGroupCount("Adults")}
             </p>
 
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs font-semibold text-green-700">
               Adults
             </p>
           </div>
 
-          <div className="rounded-2xl bg-white p-3 text-center shadow-sm">
-            <p className="text-2xl font-bold text-gray-800">
+          <div className="rounded-2xl border border-blue-100 bg-blue-50 p-3 text-center">
+            <p className="text-2xl font-black text-blue-700">
               {getGroupCount("Youth")}
             </p>
 
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs font-semibold text-blue-700">
               Youth
             </p>
           </div>
 
-          <div className="rounded-2xl bg-white p-3 text-center shadow-sm">
-            <p className="text-2xl font-bold text-gray-800">
+          <div className="rounded-2xl border border-yellow-100 bg-yellow-50 p-3 text-center">
+            <p className="text-2xl font-black text-yellow-700">
               {getGroupCount("Children")}
             </p>
 
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs font-semibold text-yellow-700">
               Children
             </p>
           </div>
@@ -303,114 +339,188 @@ function Attendance() {
         </div>
 
         {/* Group Selector */}
-        <div className="mb-4 grid grid-cols-3 gap-2">
+        <div className="mb-4">
 
-          {["Adults", "Youth", "Children"].map((group) => (
-            <button
-              key={group}
-              type="button"
-              onClick={() => {
-                setSelectedGroup(group)
-                setSearch("")
-              }}
-              className={`rounded-xl px-2 py-3 text-sm font-semibold transition ${
-                selectedGroup === group
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "bg-white text-gray-600 shadow-sm hover:bg-gray-50"
-              }`}
-            >
-              {group}
-            </button>
-          ))}
+          <p className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-slate-400">
+            Select Group
+          </p>
+
+          <div className="grid grid-cols-3 gap-2">
+
+            {["Adults", "Youth", "Children"].map((group) => (
+              <button
+                key={group}
+                type="button"
+                onClick={() => {
+                  setSelectedGroup(group);
+                  setSearch("");
+                }}
+                className={`rounded-xl px-2 py-3 text-sm font-bold transition active:scale-95 ${
+                  selectedGroup === group
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "bg-white text-slate-600 shadow-sm ring-1 ring-slate-100 hover:bg-slate-50"
+                }`}
+              >
+                {group}
+              </button>
+            ))}
+
+          </div>
 
         </div>
 
         {/* Search */}
         <div className="mb-5">
 
-          <input
-            type="text"
-            placeholder={`Search ${selectedGroup.toLowerCase()}...`}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-4 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-          />
+          <div className="relative">
+
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg text-slate-400">
+              ⌕
+            </span>
+
+            <input
+              type="text"
+              placeholder={`Search ${selectedGroup.toLowerCase()}...`}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full rounded-2xl border border-slate-200 bg-white py-4 pl-11 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+            />
+
+          </div>
 
         </div>
 
         {/* Members */}
-        <div className="space-y-3">
+        <div>
 
-          {filteredMembers.length > 0 ? (
-            filteredMembers.map((member) => {
+          <div className="mb-3 flex items-center justify-between px-1">
 
-              const present = isPresent(member.id)
+            <h2 className="font-bold text-slate-800">
+              {selectedGroup}
+            </h2>
 
-              return (
-                <button
-                  key={member.id}
-                  type="button"
-                  onClick={() => markAttendance(member)}
-                  className={`flex w-full items-center justify-between rounded-2xl p-4 text-left shadow-sm transition active:scale-[0.98] ${
-                    present
-                      ? "border border-green-200 bg-green-50"
-                      : "bg-white hover:bg-gray-50"
-                  }`}
-                >
+            <span className="text-xs font-medium text-slate-400">
+              {filteredMembers.length} member
+              {filteredMembers.length !== 1 ? "s" : ""}
+            </span>
 
-                  <div className="min-w-0">
+          </div>
 
-                    <p className="truncate font-semibold text-gray-800">
-                      {member.name}
-                    </p>
+          <div className="space-y-2.5">
 
-                    <p className="mt-1 text-sm text-gray-500">
-                      {member.group}
-                    </p>
+            {filteredMembers.length > 0 ? (
+              filteredMembers.map((member) => {
 
-                  </div>
+                const present = isPresent(member.id);
 
-                  <div
-                    className={`ml-3 shrink-0 text-sm font-semibold ${
+                return (
+                  <button
+                    key={member.id}
+                    type="button"
+                    onClick={() => markAttendance(member)}
+                    className={`flex w-full items-center justify-between rounded-2xl border p-4 text-left transition active:scale-[0.98] ${
                       present
-                        ? "text-green-600"
-                        : "text-gray-400"
+                        ? "border-green-200 bg-green-50 shadow-sm"
+                        : "border-slate-100 bg-white shadow-sm hover:border-blue-100 hover:bg-blue-50/30"
                     }`}
                   >
-                    {present ? "✓ Present" : "○"}
-                  </div>
 
-                </button>
-              )
-            })
-          ) : (
-            <div className="rounded-2xl bg-white p-6 text-center text-gray-500 shadow-sm">
-              No members found.
-            </div>
-          )}
+                    <div className="flex min-w-0 items-center gap-3">
+
+                      <div
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${
+                          present
+                            ? "bg-green-100 text-green-700"
+                            : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        {member.name
+                          .charAt(0)
+                          .toUpperCase()}
+                      </div>
+
+                      <div className="min-w-0">
+
+                        <p className="truncate font-semibold text-slate-800">
+                          {member.name}
+                        </p>
+
+                        <p className="mt-0.5 text-xs text-slate-400">
+                          {member.group}
+                        </p>
+
+                      </div>
+
+                    </div>
+
+                    <div
+                      className={`ml-3 flex shrink-0 items-center gap-1.5 text-sm font-bold ${
+                        present
+                          ? "text-green-600"
+                          : "text-slate-300"
+                      }`}
+                    >
+                      {present ? (
+                        <>
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-green-500 text-xs text-white">
+                            ✓
+                          </span>
+                          <span className="hidden sm:inline">
+                            Present
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-xl">○</span>
+                      )}
+                    </div>
+
+                  </button>
+                );
+              })
+            ) : (
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-7 text-center">
+
+                <div className="text-3xl text-slate-300">
+                  —
+                </div>
+
+                <p className="mt-2 font-semibold text-slate-600">
+                  No members found
+                </p>
+
+                <p className="mt-1 text-xs text-slate-400">
+                  Try a different search or group.
+                </p>
+
+              </div>
+            )}
+
+          </div>
 
         </div>
 
         {/* Visitors Section */}
-        <div className="mt-8">
+        <div className="mt-9">
 
           <div className="mb-3 flex items-center justify-between">
 
             <div>
-              <h2 className="text-lg font-bold text-gray-800">
+
+              <h2 className="text-lg font-bold text-slate-800">
                 Visitors
               </h2>
 
-              <p className="text-sm text-gray-500">
+              <p className="mt-0.5 text-sm text-slate-500">
                 {visitors.length} visitor
                 {visitors.length !== 1 ? "s" : ""} today
               </p>
+
             </div>
 
             <button
               type="button"
               onClick={() => setShowVisitorForm(true)}
-              className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 active:scale-95"
+              className="rounded-xl bg-green-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-green-700 active:scale-95"
             >
               + Add Visitor
             </button>
@@ -421,19 +531,27 @@ function Attendance() {
           {showVisitorForm && (
             <form
               onSubmit={addVisitor}
-              className="mb-4 rounded-2xl bg-white p-5 shadow-sm"
+              className="mb-4 rounded-3xl border border-slate-100 bg-white p-5 shadow-md"
             >
 
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-5 flex items-center justify-between">
 
-                <h3 className="font-bold text-gray-800">
-                  Add Visitor
-                </h3>
+                <div>
+
+                  <h3 className="font-bold text-slate-800">
+                    Add Visitor
+                  </h3>
+
+                  <p className="mt-0.5 text-xs text-slate-400">
+                    Record today's visitor
+                  </p>
+
+                </div>
 
                 <button
                   type="button"
                   onClick={() => setShowVisitorForm(false)}
-                  className="text-xl text-gray-400 hover:text-gray-600"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-lg text-slate-400 transition hover:bg-slate-200 hover:text-slate-600"
                 >
                   ×
                 </button>
@@ -443,17 +561,19 @@ function Attendance() {
               {/* Name */}
               <div className="mb-4">
 
-                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                <label className="mb-2 block text-sm font-bold text-slate-700">
                   Name *
                 </label>
 
                 <input
                   type="text"
                   value={visitorName}
-                  onChange={(e) => setVisitorName(e.target.value)}
+                  onChange={(e) =>
+                    setVisitorName(e.target.value)
+                  }
                   placeholder="Enter visitor's name"
                   required
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
                 />
 
               </div>
@@ -461,14 +581,16 @@ function Attendance() {
               {/* Purpose */}
               <div className="mb-4">
 
-                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                <label className="mb-2 block text-sm font-bold text-slate-700">
                   Reason for Visit *
                 </label>
 
                 <select
                   value={visitorPurpose}
-                  onChange={(e) => setVisitorPurpose(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  onChange={(e) =>
+                    setVisitorPurpose(e.target.value)
+                  }
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
                 >
                   <option>First Time Visitor</option>
                   <option>Visiting from Another Church</option>
@@ -482,19 +604,24 @@ function Attendance() {
               {/* Invited By */}
               <div className="mb-5">
 
-                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                <label className="mb-2 block text-sm font-bold text-slate-700">
+
                   Who Invited Them?
-                  <span className="ml-1 font-normal text-gray-400">
+
+                  <span className="ml-1 font-normal text-slate-400">
                     (Optional)
                   </span>
+
                 </label>
 
                 <input
                   type="text"
                   value={visitorInvitedBy}
-                  onChange={(e) => setVisitorInvitedBy(e.target.value)}
+                  onChange={(e) =>
+                    setVisitorInvitedBy(e.target.value)
+                  }
                   placeholder="Enter name if applicable"
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
                 />
 
               </div>
@@ -505,14 +632,14 @@ function Attendance() {
                 <button
                   type="button"
                   onClick={() => setShowVisitorForm(false)}
-                  className="rounded-xl bg-gray-100 px-4 py-3 font-semibold text-gray-600 transition hover:bg-gray-200"
+                  className="rounded-xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-600 transition hover:bg-slate-200"
                 >
                   Cancel
                 </button>
 
                 <button
                   type="submit"
-                  className="rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700"
+                  className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 active:scale-95"
                 >
                   Add Visitor
                 </button>
@@ -523,7 +650,7 @@ function Attendance() {
           )}
 
           {/* Visitor List */}
-          <div className="space-y-3">
+          <div className="space-y-2.5">
 
             {visitors.length > 0 ? (
               visitors.map((visitor) => (
@@ -534,28 +661,38 @@ function Attendance() {
 
                   <div className="flex items-start justify-between gap-3">
 
-                    <div className="min-w-0">
+                    <div className="flex min-w-0 items-start gap-3">
 
-                      <p className="font-semibold text-gray-800">
-                        {visitor.name}
-                      </p>
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-100 font-bold text-green-700">
+                        {visitor.name
+                          .charAt(0)
+                          .toUpperCase()}
+                      </div>
 
-                      <p className="mt-1 text-sm text-green-700">
-                        {visitor.purpose}
-                      </p>
+                      <div className="min-w-0">
 
-                      {visitor.invitedBy && (
-                        <p className="mt-1 text-xs text-gray-500">
-                          Invited by: {visitor.invitedBy}
+                        <p className="truncate font-semibold text-slate-800">
+                          {visitor.name}
                         </p>
-                      )}
+
+                        <p className="mt-1 text-sm font-medium text-green-700">
+                          {visitor.purpose}
+                        </p>
+
+                        {visitor.invitedBy && (
+                          <p className="mt-1 text-xs text-slate-500">
+                            Invited by: {visitor.invitedBy}
+                          </p>
+                        )}
+
+                      </div>
 
                     </div>
 
                     <button
                       type="button"
                       onClick={() => removeVisitor(visitor)}
-                      className="shrink-0 text-xs font-semibold text-red-500 hover:text-red-700"
+                      className="shrink-0 rounded-lg px-2 py-1 text-xs font-bold text-red-500 transition hover:bg-red-50 hover:text-red-700"
                     >
                       Remove
                     </button>
@@ -565,8 +702,16 @@ function Attendance() {
                 </div>
               ))
             ) : (
-              <div className="rounded-2xl bg-white p-5 text-center text-sm text-gray-400 shadow-sm">
-                No visitors recorded today.
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-5 text-center">
+
+                <p className="text-sm font-medium text-slate-500">
+                  No visitors recorded today.
+                </p>
+
+                <p className="mt-1 text-xs text-slate-400">
+                  Visitors you add will appear here.
+                </p>
+
               </div>
             )}
 
@@ -576,7 +721,7 @@ function Attendance() {
 
       </div>
     </div>
-  )
+  );
 }
 
-export default Attendance
+export default Attendance;

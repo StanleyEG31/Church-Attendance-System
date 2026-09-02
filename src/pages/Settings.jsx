@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { db } from "../db/db"
+import churchLogo from "../assets/COTF-LOGO.png"
 
 function Settings() {
   const [message, setMessage] = useState("")
@@ -107,98 +108,210 @@ function Settings() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 px-4 py-6 pb-8">
+    <div className="min-h-screen bg-slate-50 px-4 py-5 pb-8">
       <div className="mx-auto max-w-md">
 
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">
-            ⚙️ Settings
-          </h1>
 
-          <p className="mt-1 text-sm text-gray-500">
-            Manage your attendance data
-          </p>
-        </div>
+          <div className="flex items-center gap-3">
 
-        {/* Backup */}
-        <div className="mb-4 rounded-2xl bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-800">
-            💾 Backup Data
-          </h2>
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white p-1.5 shadow-sm ring-1 ring-slate-100">
+              <img
+                src={churchLogo}
+                alt="COTF Church Logo"
+                className="h-full w-full object-contain"
+              />
+            </div>
 
-          <p className="mt-2 text-sm text-gray-500">
-            Save your members and attendance records to a
-            backup file.
-          </p>
+            <div className="min-w-0">
 
-          <button
-            type="button"
-            onClick={backupData}
-            className="mt-4 w-full rounded-xl bg-blue-600 py-3 font-semibold text-white"
-          >
-            Download Backup
-          </button>
-        </div>
+              <h1 className="text-xl font-bold text-slate-800">
+                Settings
+              </h1>
 
-        {/* Restore */}
-        <div className="mb-4 rounded-2xl bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-800">
-            ♻️ Restore Data
-          </h2>
+              <p className="mt-0.5 text-sm text-slate-500">
+                Manage your attendance data
+              </p>
 
-          <p className="mt-2 text-sm text-gray-500">
-            Restore members and attendance from a backup
-            file.
-          </p>
+            </div>
 
-          <label className="mt-4 block w-full cursor-pointer rounded-xl bg-gray-200 py-3 text-center font-semibold text-gray-700">
-            Choose Backup File
+          </div>
 
-            <input
-              type="file"
-              accept=".json"
-              onChange={restoreData}
-              className="hidden"
-            />
-          </label>
-        </div>
-
-        {/* Clear Attendance */}
-        <div className="mb-4 rounded-2xl bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-800">
-            🗑️ Clear Attendance History
-          </h2>
-
-          <p className="mt-2 text-sm text-gray-500">
-            Delete all attendance records while keeping
-            your members.
-          </p>
-
-          <button
-            type="button"
-            onClick={clearAttendanceHistory}
-            className="mt-4 w-full rounded-xl bg-red-600 py-3 font-semibold text-white"
-          >
-            Clear Attendance History
-          </button>
         </div>
 
         {/* Message */}
         {message && (
-          <div className="mb-4 rounded-2xl bg-green-50 p-4 text-center text-sm font-medium text-green-700">
-            {message}
+          <div className="mb-5 flex items-start gap-3 rounded-2xl border border-green-100 bg-green-50 p-4">
+
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-500 text-sm font-bold text-white">
+              ✓
+            </div>
+
+            <p className="pt-1 text-sm font-semibold text-green-700">
+              {message}
+            </p>
+
           </div>
         )}
 
+        {/* Backup */}
+        <div className="mb-4 overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-sm">
+
+          <div className="h-1.5 bg-blue-600" />
+
+          <div className="p-5">
+
+            <div className="flex items-start gap-3">
+
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                <span className="text-lg font-bold">
+                  ↓
+                </span>
+              </div>
+
+              <div>
+
+                <h2 className="text-lg font-bold text-slate-800">
+                  Backup Data
+                </h2>
+
+                <p className="mt-1 text-sm leading-5 text-slate-500">
+                  Save your members and attendance records
+                  to a backup file.
+                </p>
+
+              </div>
+
+            </div>
+
+            <button
+              type="button"
+              onClick={backupData}
+              className="mt-5 w-full rounded-xl bg-blue-600 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 active:scale-[0.98]"
+            >
+              Download Backup
+            </button>
+
+          </div>
+
+        </div>
+
+        {/* Restore */}
+        <div className="mb-4 overflow-hidden rounded-3xl border border-green-100 bg-white shadow-sm">
+
+          <div className="h-1.5 bg-green-600" />
+
+          <div className="p-5">
+
+            <div className="flex items-start gap-3">
+
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-green-50 text-green-600">
+                <span className="text-lg font-bold">
+                  ↑
+                </span>
+              </div>
+
+              <div>
+
+                <h2 className="text-lg font-bold text-slate-800">
+                  Restore Data
+                </h2>
+
+                <p className="mt-1 text-sm leading-5 text-slate-500">
+                  Restore members and attendance from a
+                  backup file.
+                </p>
+
+              </div>
+
+            </div>
+
+            <label className="mt-5 block w-full cursor-pointer rounded-xl border border-green-200 bg-green-50 py-3.5 text-center text-sm font-bold text-green-700 transition hover:bg-green-100 active:scale-[0.98]">
+
+              Choose Backup File
+
+              <input
+                type="file"
+                accept=".json"
+                onChange={restoreData}
+                className="hidden"
+              />
+
+            </label>
+
+          </div>
+
+        </div>
+
+        {/* Clear Attendance */}
+        <div className="mb-4 overflow-hidden rounded-3xl border border-red-100 bg-white shadow-sm">
+
+          <div className="h-1.5 bg-red-500" />
+
+          <div className="p-5">
+
+            <div className="flex items-start gap-3">
+
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-500">
+                <span className="text-lg font-bold">
+                  ×
+                </span>
+              </div>
+
+              <div>
+
+                <h2 className="text-lg font-bold text-slate-800">
+                  Clear Attendance History
+                </h2>
+
+                <p className="mt-1 text-sm leading-5 text-slate-500">
+                  Delete all attendance records while
+                  keeping your members.
+                </p>
+
+              </div>
+
+            </div>
+
+            <button
+              type="button"
+              onClick={clearAttendanceHistory}
+              className="mt-5 w-full rounded-xl bg-red-500 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-red-600 active:scale-[0.98]"
+            >
+              Clear Attendance History
+            </button>
+
+          </div>
+
+        </div>
+
         {/* Warning */}
-        <div className="mt-6 rounded-2xl bg-yellow-50 p-4">
-          <p className="text-sm text-yellow-800">
-            ⚠️ Keep a backup of your attendance data in a
-            safe location. If the phone is lost or its
-            browser data is cleared, local data may be
-            lost.
-          </p>
+        <div className="mt-6 rounded-2xl border border-yellow-200 bg-yellow-50 p-4">
+
+          <div className="flex items-start gap-3">
+
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-yellow-100 text-yellow-700">
+              !
+            </div>
+
+            <div>
+
+              <p className="text-sm font-bold text-yellow-800">
+                Keep your data safe
+              </p>
+
+              <p className="mt-1 text-xs leading-5 text-yellow-700">
+                Keep a backup of your attendance data in a
+                safe location. If the phone is lost or its
+                browser data is cleared, local data may be
+                lost.
+              </p>
+
+            </div>
+
+          </div>
+
         </div>
 
       </div>
@@ -207,3 +320,4 @@ function Settings() {
 }
 
 export default Settings
+
