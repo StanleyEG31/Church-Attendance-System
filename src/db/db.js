@@ -12,3 +12,10 @@ db.version(2).stores({
   attendance: "++id, memberId, date",
   visitors: "++id, name, date, purpose",
 })
+
+db.version(3).stores({
+  members: "++id, name, group, archived, createdAt",
+  attendance: "++id, memberId, date",
+  visitors: "++id, name, date, purpose",
+})
+

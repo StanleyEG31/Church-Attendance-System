@@ -1,6 +1,11 @@
 function BottomNav({ activePage, setActivePage }) {
   const navItems = [
     {
+      id: "dashboard",
+      label: "Dashboard",
+      icon: "▦",
+    },
+    {
       id: "attendance",
       label: "Attendance",
       icon: "✓",
@@ -20,14 +25,13 @@ function BottomNav({ activePage, setActivePage }) {
       label: "Settings",
       icon: "⚙",
     },
-  ]
+  ];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white/95 shadow-[0_-4px_20px_rgba(15,23,42,0.08)] backdrop-blur-md">
       <div className="mx-auto flex max-w-md">
-
         {navItems.map((item) => {
-          const isActive = activePage === item.id
+          const isActive = activePage === item.id;
 
           return (
             <button
@@ -40,7 +44,6 @@ function BottomNav({ activePage, setActivePage }) {
                   : "text-slate-400 hover:text-slate-600"
               }`}
             >
-
               {/* Active indicator */}
               {isActive && (
                 <span className="absolute top-0 h-1 w-10 rounded-b-full bg-blue-600" />
@@ -60,22 +63,17 @@ function BottomNav({ activePage, setActivePage }) {
               {/* Label */}
               <span
                 className={`text-[11px] ${
-                  isActive
-                    ? "font-bold"
-                    : "font-medium"
+                  isActive ? "font-bold" : "font-medium"
                 }`}
               >
                 {item.label}
               </span>
-
             </button>
-          )
+          );
         })}
-
       </div>
     </nav>
-  )
+  );
 }
 
-export default BottomNav
-
+export default BottomNav;

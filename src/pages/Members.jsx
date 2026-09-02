@@ -17,9 +17,18 @@ function Members() {
   }, []);
 
   const loadMembers = async () => {
-    const savedMembers = await db.members.toArray();
-    setMembers(savedMembers);
-  };
+  const savedMembers = await db.members.toArray();
+
+  const activeMembers = savedMembers
+    .filter((member) => !member.archived)
+    .sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, {
+        sensitivity: "base",
+      }),
+    );
+
+  setMembers(activeMembers);
+};
 
   const addMember = async (e) => {
     e.preventDefault();
@@ -31,6 +40,8 @@ function Members() {
     await db.members.add({
       name: name.trim(),
       group,
+      archived: false,
+      createdAt: new Date().toISOString(),
     });
 
     setName("");
