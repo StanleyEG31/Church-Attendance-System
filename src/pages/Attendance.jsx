@@ -2,21 +2,16 @@ import { useEffect, useState } from "react"
 import { db } from "../db/db"
 
 // TEMPORARY TEST MODE
-// Change this to true while testing.
-// Change it back to false before deployment.
+// Change this to false before final deployment.
 const TEST_MODE = true
 
 function getSessionDate() {
   const today = new Date()
 
-  // Temporary testing:
-  // Use the current date so we can test attendance any day.
   if (TEST_MODE) {
     return today.toISOString().split("T")[0]
   }
 
-  // Real mode:
-  // Attendance is only allowed on Sunday.
   if (today.getDay() !== 0) {
     return null
   }
@@ -29,7 +24,14 @@ function Attendance() {
   const [search, setSearch] = useState("")
   const [members, setMembers] = useState([])
   const [attendance, setAttendance] = useState([])
+  const [visitors, setVisitors] = useState([])
   const [isSunday, setIsSunday] = useState(false)
+
+  // Visitor form
+  const [showVisitorForm, setShowVisitorForm] = useState(false)
+  const [visitorName, setVisitorName] = useState("")
+  const [visitorPurpose, setVisitorPurpose] = useState("First Time Visitor")
+  const [visitorInvitedBy, setVisitorInvitedBy] = useState("")
 
   useEffect(() => {
     loadData()
@@ -39,8 +41,6 @@ function Attendance() {
     const savedMembers = await db.members.toArray()
 
     const today = new Date()
-
-    // Sunday = 0
     const sunday = today.getDay() === 0
 
     setIsSunday(sunday)
@@ -51,6 +51,7 @@ function Attendance() {
 
     if (!sessionDate) {
       setAttendance([])
+      setVisitors([])
       return
     }
 
@@ -59,7 +60,13 @@ function Attendance() {
       .equals(sessionDate)
       .toArray()
 
+    const savedVisitors = await db.visitors
+      .where("date")
+      .equals(sessionDate)
+      .toArray()
+
     setAttendance(savedAttendance)
+    setVisitors(savedVisitors)
   }
 
   const markAttendance = async (member) => {
@@ -115,6 +122,57 @@ function Attendance() {
     ])
   }
 
+  const addVisitor = async (e) => {
+    e.preventDefault()
+
+    const sessionDate = getSessionDate()
+
+    if (!sessionDate || !visitorName.trim()) {
+      return
+    }
+
+    const visitor = {
+      name: visitorName.trim(),
+      purpose: visitorPurpose,
+      invitedBy: visitorInvitedBy.trim(),
+      date: sessionDate,
+      time: new Date().toLocaleTimeString(),
+      service: "Sunday Morning",
+    }
+
+    const id = await db.visitors.add(visitor)
+
+    setVisitors((current) => [
+      ...current,
+      {
+        ...visitor,
+        id,
+      },
+    ])
+
+    // Reset form
+    setVisitorName("")
+    setVisitorPurpose("First Time Visitor")
+    setVisitorInvitedBy("")
+    setShowVisitorForm(false)
+  }
+
+  const removeVisitor = async (visitor) => {
+    const confirmed = window.confirm(
+      `Remove ${visitor.name} from today's visitors?`
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    await db.visitors.delete(visitor.id)
+
+    setVisitors((current) =>
+      current.filter((item) => item.id !== visitor.id)
+    )
+  }
+
   const getGroupCount = (group) => {
     return attendance.filter(
       (record) => record.group === group
@@ -138,7 +196,6 @@ function Attendance() {
     return (
       <div className="min-h-screen bg-gray-100 px-4 py-6">
         <div className="mx-auto max-w-md">
-
           <div className="mt-16 rounded-3xl bg-white p-8 text-center shadow-sm">
 
             <div className="mb-4 text-5xl">
@@ -161,7 +218,6 @@ function Attendance() {
             </p>
 
           </div>
-
         </div>
       </div>
     )
@@ -206,7 +262,7 @@ function Attendance() {
           </p>
 
           <p className="mt-1 text-sm text-gray-400">
-            Present
+            Members Present
           </p>
 
         </div>
@@ -257,10 +313,10 @@ function Attendance() {
                 setSelectedGroup(group)
                 setSearch("")
               }}
-              className={`rounded-xl px-2 py-3 text-sm font-semibold ${
+              className={`rounded-xl px-2 py-3 text-sm font-semibold transition ${
                 selectedGroup === group
-                  ? "bg-blue-600 text-white"
-                  : "bg-white text-gray-600 shadow-sm"
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "bg-white text-gray-600 shadow-sm hover:bg-gray-50"
               }`}
             >
               {group}
@@ -277,7 +333,7 @@ function Attendance() {
             placeholder={`Search ${selectedGroup.toLowerCase()}...`}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-4 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-4 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           />
 
         </div>
@@ -298,7 +354,7 @@ function Attendance() {
                   className={`flex w-full items-center justify-between rounded-2xl p-4 text-left shadow-sm transition active:scale-[0.98] ${
                     present
                       ? "border border-green-200 bg-green-50"
-                      : "bg-white"
+                      : "bg-white hover:bg-gray-50"
                   }`}
                 >
 
@@ -328,10 +384,193 @@ function Attendance() {
               )
             })
           ) : (
-            <div className="rounded-2xl bg-white p-6 text-center text-gray-500">
+            <div className="rounded-2xl bg-white p-6 text-center text-gray-500 shadow-sm">
               No members found.
             </div>
           )}
+
+        </div>
+
+        {/* Visitors Section */}
+        <div className="mt-8">
+
+          <div className="mb-3 flex items-center justify-between">
+
+            <div>
+              <h2 className="text-lg font-bold text-gray-800">
+                Visitors
+              </h2>
+
+              <p className="text-sm text-gray-500">
+                {visitors.length} visitor
+                {visitors.length !== 1 ? "s" : ""} today
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowVisitorForm(true)}
+              className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 active:scale-95"
+            >
+              + Add Visitor
+            </button>
+
+          </div>
+
+          {/* Visitor Form */}
+          {showVisitorForm && (
+            <form
+              onSubmit={addVisitor}
+              className="mb-4 rounded-2xl bg-white p-5 shadow-sm"
+            >
+
+              <div className="mb-4 flex items-center justify-between">
+
+                <h3 className="font-bold text-gray-800">
+                  Add Visitor
+                </h3>
+
+                <button
+                  type="button"
+                  onClick={() => setShowVisitorForm(false)}
+                  className="text-xl text-gray-400 hover:text-gray-600"
+                >
+                  ×
+                </button>
+
+              </div>
+
+              {/* Name */}
+              <div className="mb-4">
+
+                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                  Name *
+                </label>
+
+                <input
+                  type="text"
+                  value={visitorName}
+                  onChange={(e) => setVisitorName(e.target.value)}
+                  placeholder="Enter visitor's name"
+                  required
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+
+              </div>
+
+              {/* Purpose */}
+              <div className="mb-4">
+
+                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                  Reason for Visit *
+                </label>
+
+                <select
+                  value={visitorPurpose}
+                  onChange={(e) => setVisitorPurpose(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  <option>First Time Visitor</option>
+                  <option>Visiting from Another Church</option>
+                  <option>Returning Visitor</option>
+                  <option>Invited Guest</option>
+                  <option>Other</option>
+                </select>
+
+              </div>
+
+              {/* Invited By */}
+              <div className="mb-5">
+
+                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                  Who Invited Them?
+                  <span className="ml-1 font-normal text-gray-400">
+                    (Optional)
+                  </span>
+                </label>
+
+                <input
+                  type="text"
+                  value={visitorInvitedBy}
+                  onChange={(e) => setVisitorInvitedBy(e.target.value)}
+                  placeholder="Enter name if applicable"
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+
+              </div>
+
+              {/* Buttons */}
+              <div className="grid grid-cols-2 gap-2">
+
+                <button
+                  type="button"
+                  onClick={() => setShowVisitorForm(false)}
+                  className="rounded-xl bg-gray-100 px-4 py-3 font-semibold text-gray-600 transition hover:bg-gray-200"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700"
+                >
+                  Add Visitor
+                </button>
+
+              </div>
+
+            </form>
+          )}
+
+          {/* Visitor List */}
+          <div className="space-y-3">
+
+            {visitors.length > 0 ? (
+              visitors.map((visitor) => (
+                <div
+                  key={visitor.id}
+                  className="rounded-2xl border border-green-100 bg-green-50 p-4 shadow-sm"
+                >
+
+                  <div className="flex items-start justify-between gap-3">
+
+                    <div className="min-w-0">
+
+                      <p className="font-semibold text-gray-800">
+                        {visitor.name}
+                      </p>
+
+                      <p className="mt-1 text-sm text-green-700">
+                        {visitor.purpose}
+                      </p>
+
+                      {visitor.invitedBy && (
+                        <p className="mt-1 text-xs text-gray-500">
+                          Invited by: {visitor.invitedBy}
+                        </p>
+                      )}
+
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => removeVisitor(visitor)}
+                      className="shrink-0 text-xs font-semibold text-red-500 hover:text-red-700"
+                    >
+                      Remove
+                    </button>
+
+                  </div>
+
+                </div>
+              ))
+            ) : (
+              <div className="rounded-2xl bg-white p-5 text-center text-sm text-gray-400 shadow-sm">
+                No visitors recorded today.
+              </div>
+            )}
+
+          </div>
 
         </div>
 
