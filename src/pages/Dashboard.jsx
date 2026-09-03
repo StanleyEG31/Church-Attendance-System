@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { db } from "../db/db";
+import { api } from "../api";
 import churchLogo from "../assets/COTF-LOGO.png";
 
 function getMonthKey(date = new Date()) {
@@ -72,11 +72,14 @@ function Dashboard() {
     setLoading(true);
 
     try {
-      await archiveInactiveMembers();
+      const savedMembers = await api.getMembers();
+      const savedAttendance = await api.getAttendance();
 
-      const savedMembers = await db.members.toArray();
+      await archiveInactiveMembers(savedMembers, savedAttendance);
 
-      const activeMembers = savedMembers
+      const updatedMembers = await api.getMembers();
+
+      const activeMembers = updatedMembers
         .filter((member) => !member.archived)
         .sort((a, b) =>
           a.name.localeCompare(b.name, undefined, {
@@ -84,24 +87,22 @@ function Dashboard() {
           }),
         );
 
-      const savedAttendance = await db.attendance
-        .where("date")
-        .between(`${selectedMonth}-01`, `${selectedMonth}-31`, true, true)
-        .toArray();
+      const monthAttendance = savedAttendance.filter(
+        (record) =>
+          record.date >= `${selectedMonth}-01` &&
+          record.date <= `${selectedMonth}-31`,
+      );
 
       setMembers(activeMembers);
-      setAttendance(savedAttendance);
+      setAttendance(monthAttendance);
     } catch (error) {
-      console.error(error);
+      console.error("Failed to load dashboard:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const archiveInactiveMembers = async () => {
-    const allMembers = await db.members.toArray();
-    const allAttendance = await db.attendance.toArray();
-
+  const archiveInactiveMembers = async (allMembers, allAttendance) => {
     const today = new Date();
 
     for (const member of allMembers) {
@@ -110,15 +111,15 @@ function Dashboard() {
       }
 
       const memberAttendance = allAttendance
-        .filter((record) => record.memberId === member.id)
+        .filter((record) => record.member_id === member.id)
         .sort((a, b) => b.date.localeCompare(a.date));
 
       const lastAttendance = memberAttendance[0]?.date;
 
       const referenceDate = lastAttendance
         ? new Date(`${lastAttendance}T00:00:00`)
-        : member.createdAt
-          ? new Date(member.createdAt)
+        : member.created_at
+          ? new Date(member.created_at)
           : null;
 
       if (!referenceDate) {
@@ -129,9 +130,7 @@ function Dashboard() {
       expirationDate.setMonth(expirationDate.getMonth() + 6);
 
       if (today >= expirationDate) {
-        await db.members.update(member.id, {
-          archived: true,
-        });
+        await api.archiveMember(member.id);
       }
     }
   };
@@ -139,55 +138,62 @@ function Dashboard() {
   const sundays = getSundaysInMonth(selectedMonth);
 
   const isPresent = (memberId, date) => {
-    return attendance.some(
-      (record) => record.memberId === memberId && record.date === date,
-    );
-  };
+  return attendance.some(
+    (record) =>
+      Number(record.member_id) === Number(memberId) &&
+      String(record.date).slice(0, 10) === date,
+  );
+};
 
   const toggleAttendance = async (member, date) => {
-    if (isFutureDate(date)) {
-      return;
+  if (isFutureDate(date)) {
+    return;
+  }
+
+  const existingRecord = attendance.find(
+    (record) =>
+      record.member_id === member.id &&
+      record.date === date,
+  );
+
+  try {
+    // Present → remove attendance
+    if (existingRecord) {
+      await api.deleteAttendance(existingRecord.id);
+    } else {
+      // Absent → mark present
+      const now = new Date();
+
+      const time =
+        String(now.getHours()).padStart(2, "0") +
+        ":" +
+        String(now.getMinutes()).padStart(2, "0") +
+        ":" +
+        String(now.getSeconds()).padStart(2, "0");
+
+      await api.addAttendance({
+        member_id: member.id,
+        date,
+        time,
+        status: "Present",
+      });
     }
 
-    const existingRecord = attendance.find(
-      (record) => record.memberId === member.id && record.date === date,
+    // Reload attendance directly from MySQL
+    const updatedAttendance = await api.getAttendance();
+
+    const monthAttendance = updatedAttendance.filter(
+      (record) =>
+        record.date >= `${selectedMonth}-01` &&
+        record.date <= `${selectedMonth}-31`,
     );
 
-    try {
-      // Already present → remove attendance
-      if (existingRecord) {
-        await db.attendance.delete(existingRecord.id);
-
-        setAttendance((current) =>
-          current.filter((record) => record.id !== existingRecord.id),
-        );
-
-        return;
-      }
-
-      // Absent → mark present
-      const record = {
-        memberId: member.id,
-        memberName: member.name,
-        group: member.group,
-        date,
-        time: new Date().toLocaleTimeString(),
-        status: "Present",
-      };
-
-      const id = await db.attendance.add(record);
-
-      setAttendance((current) => [
-        ...current,
-        {
-          ...record,
-          id,
-        },
-      ]);
-    } catch (error) {
-      console.error("Failed to update attendance:", error);
-    }
-  };
+    setAttendance(monthAttendance);
+  } catch (error) {
+    console.error("Failed to update attendance:", error);
+    alert("Failed to update attendance.");
+  }
+};
 
   const getMemberAttendanceCount = (memberId) => {
     return sundays.filter(

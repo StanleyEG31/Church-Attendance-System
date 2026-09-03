@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { db } from "../db/db";
+import { api } from "../api";
 import churchLogo from "../assets/COTF-LOGO.png";
 
 function Members() {
@@ -17,18 +17,23 @@ function Members() {
   }, []);
 
   const loadMembers = async () => {
-  const savedMembers = await db.members.toArray();
+    try {
+      const savedMembers = await api.getMembers();
 
-  const activeMembers = savedMembers
-    .filter((member) => !member.archived)
-    .sort((a, b) =>
-      a.name.localeCompare(b.name, undefined, {
-        sensitivity: "base",
-      }),
-    );
+      const activeMembers = savedMembers
+        .filter((member) => !member.archived)
+        .sort((a, b) =>
+          a.name.localeCompare(b.name, undefined, {
+            sensitivity: "base",
+          }),
+        );
 
-  setMembers(activeMembers);
-};
+      setMembers(activeMembers);
+    } catch (error) {
+      console.error("Failed to load members:", error);
+      alert("Failed to load members from the server.");
+    }
+  };
 
   const addMember = async (e) => {
     e.preventDefault();
@@ -37,16 +42,21 @@ function Members() {
       return;
     }
 
-    await db.members.add({
-      name: name.trim(),
-      group,
-      archived: false,
-      createdAt: new Date().toISOString(),
-    });
+    try {
+      await api.addMember({
+        name: name.trim(),
+        group,
+        archived: false,
+      });
 
-    setName("");
-    setGroup("Adults");
-    loadMembers();
+      setName("");
+      setGroup("Adults");
+
+      await loadMembers();
+    } catch (error) {
+      console.error("Failed to add member:", error);
+      alert("Failed to add member.");
+    }
   };
 
   const startEditing = (member) => {
@@ -60,16 +70,21 @@ function Members() {
       return;
     }
 
-    await db.members.update(id, {
-      name: editingName.trim(),
-      group: editingGroup,
-    });
+    try {
+      await api.updateMember(id, {
+        name: editingName.trim(),
+        group: editingGroup,
+      });
 
-    setEditingId(null);
-    setEditingName("");
-    setEditingGroup("Adults");
+      setEditingId(null);
+      setEditingName("");
+      setEditingGroup("Adults");
 
-    loadMembers();
+      await loadMembers();
+    } catch (error) {
+      console.error("Failed to update member:", error);
+      alert("Failed to update member.");
+    }
   };
 
   const cancelEdit = () => {
@@ -87,8 +102,13 @@ function Members() {
       return;
     }
 
-    await db.members.delete(id);
-    loadMembers();
+    try {
+      await api.deleteMember(id);
+      await loadMembers();
+    } catch (error) {
+      console.error("Failed to delete member:", error);
+      alert("Failed to delete member.");
+    }
   };
 
   const filteredMembers = members.filter((member) =>
@@ -176,7 +196,9 @@ function Members() {
                 {youthCount}
               </p>
 
-              <p className="mt-0.5 text-xs font-medium text-slate-500">Youth</p>
+              <p className="mt-0.5 text-xs font-medium text-slate-500">
+                Youth
+              </p>
             </div>
 
             {/* Children */}
@@ -422,3 +444,4 @@ function Members() {
 }
 
 export default Members;
+

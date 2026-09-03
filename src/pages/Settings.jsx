@@ -1,111 +1,282 @@
 import { useState } from "react"
-import { db } from "../db/db"
+import { api } from "../api"
 import churchLogo from "../assets/COTF-LOGO.png"
 
 function Settings() {
   const [message, setMessage] = useState("")
 
   const backupData = async () => {
-    try {
-      const members = await db.members.toArray()
-      const attendance = await db.attendance.toArray()
+  try {
+    const [members, attendance, visitors] = await Promise.all([
+      api.getMembers(),
+      api.getAttendance(),
+      api.getVisitors(),
+    ])
 
-      const backup = {
-        version: 1,
-        createdAt: new Date().toISOString(),
-        members,
-        attendance,
-      }
-
-      const json = JSON.stringify(backup, null, 2)
-
-      const blob = new Blob([json], {
-        type: "application/json",
-      })
-
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement("a")
-
-      link.href = url
-
-      link.download = `church-attendance-backup-${new Date()
-        .toISOString()
-        .split("T")[0]}.json`
-
-      link.click()
-
-      URL.revokeObjectURL(url)
-
-      setMessage("Backup created successfully.")
-    } catch (error) {
-      console.error(error)
-      setMessage("Failed to create backup.")
+    const backup = {
+      version: 2,
+      createdAt: new Date().toISOString(),
+      members,
+      attendance,
+      visitors,
     }
+
+    const json = JSON.stringify(backup, null, 2)
+
+    const blob = new Blob([json], {
+      type: "application/json",
+    })
+
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+
+    link.href = url
+
+    link.download = `church-attendance-backup-${new Date()
+      .toISOString()
+      .split("T")[0]}.json`
+
+    link.click()
+
+    URL.revokeObjectURL(url)
+
+    setMessage("Backup created successfully.")
+  } catch (error) {
+    console.error(error)
+    setMessage("Failed to create backup.")
+  }
+}
+
+const restoreData = (event) => {
+  const file = event.target.files[0]
+
+  if (!file) {
+    return
   }
 
-  const restoreData = (event) => {
-    const file = event.target.files[0]
+  const reader = new FileReader()
 
-    if (!file) {
-      return
-    }
+  reader.onload = async (e) => {
+    try {
+      const backup = JSON.parse(e.target.result)
 
-    const reader = new FileReader()
+      if (!backup.members || !backup.attendance) {
+        throw new Error("Invalid backup file")
+      }
 
-    reader.onload = async (e) => {
-      try {
-        const backup = JSON.parse(e.target.result)
+      const confirmed = window.confirm(
+        "Restoring this backup will add missing data and skip duplicates. Continue?"
+      )
 
-        if (!backup.members || !backup.attendance) {
-          throw new Error("Invalid backup file")
-        }
+      if (!confirmed) {
+        event.target.value = ""
+        return
+      }
 
-        const confirmed = window.confirm(
-          "Restoring this backup will replace the current members and attendance data. Continue?"
+      /*
+       * ==========================================
+       * RESTORE MEMBERS
+       * ==========================================
+       */
+
+      // Get current members from database
+      const currentMembers = await api.getMembers()
+
+      // Map old backup member IDs to current database IDs
+      const memberIdMap = {}
+
+      for (const backupMember of backup.members) {
+        // Find an existing member by name
+        const existingMember = currentMembers.find(
+          (member) =>
+            member.name?.trim().toLowerCase() ===
+            backupMember.name?.trim().toLowerCase()
         )
 
-        if (!confirmed) {
-          event.target.value = ""
-          return
+        if (existingMember) {
+          // Existing member → use its current database ID
+          memberIdMap[backupMember.id] = existingMember.id
+        } else {
+          // Member doesn't exist → create it
+          const newMember = await api.addMember({
+            name: backupMember.name,
+            group: backupMember.group,
+            archived: backupMember.archived ?? false,
+          })
+
+          // Save the new database ID
+          memberIdMap[backupMember.id] = newMember.id
         }
-
-        await db.members.clear()
-        await db.attendance.clear()
-
-        await db.members.bulkAdd(backup.members)
-        await db.attendance.bulkAdd(backup.attendance)
-
-        setMessage("Data restored successfully.")
-
-        event.target.value = ""
-      } catch (error) {
-        console.error(error)
-        setMessage("Invalid or damaged backup file.")
       }
-    }
 
-    reader.readAsText(file)
+      /*
+       * ==========================================
+       * RESTORE ATTENDANCE
+       * ==========================================
+       */
+
+      // Get existing attendance records
+      const currentAttendance = await api.getAttendance()
+
+      let attendanceRestored = 0
+      let attendanceSkipped = 0
+
+      for (const record of backup.attendance) {
+        try {
+          // Convert old member ID to current member ID
+          const currentMemberId = memberIdMap[record.member_id]
+
+          if (!currentMemberId) {
+            console.warn(
+              "Skipping attendance because member was not found:",
+              record
+            )
+
+            attendanceSkipped++
+            continue
+          }
+
+          const date = String(record.date).slice(0, 10)
+          const time = record.time || null
+          const status = record.status || "Present"
+
+          // Prevent duplicate attendance
+          const alreadyExists = currentAttendance.some(
+            (existing) =>
+              Number(existing.member_id) === Number(currentMemberId) &&
+              String(existing.date).slice(0, 10) === date &&
+              (existing.time || null) === time &&
+              (existing.status || "Present") === status
+          )
+
+          if (alreadyExists) {
+            attendanceSkipped++
+            continue
+          }
+
+          await api.addAttendance({
+            member_id: currentMemberId,
+            date,
+            time,
+            status,
+          })
+
+          attendanceRestored++
+        } catch (error) {
+          console.error(
+            "Failed to restore attendance:",
+            record,
+            error
+          )
+
+          attendanceSkipped++
+        }
+      }
+
+      /*
+       * ==========================================
+       * RESTORE VISITORS
+       * ==========================================
+       */
+
+      let visitorsRestored = 0
+      let visitorsSkipped = 0
+
+      if (backup.visitors) {
+        // Get current visitors
+        const currentVisitors = await api.getVisitors()
+
+        for (const backupVisitor of backup.visitors) {
+          try {
+            const date = String(backupVisitor.date).slice(0, 10)
+            const time = backupVisitor.time || null
+            const service =
+              backupVisitor.service || "Sunday Morning"
+
+            // Check if visitor already exists
+            const alreadyExists = currentVisitors.some(
+              (visitor) =>
+                visitor.name?.trim().toLowerCase() ===
+                  backupVisitor.name?.trim().toLowerCase() &&
+                String(visitor.date).slice(0, 10) === date &&
+                (visitor.time || null) === time &&
+                (visitor.service || "Sunday Morning") === service
+            )
+
+            if (alreadyExists) {
+              visitorsSkipped++
+              continue
+            }
+
+            await api.addVisitor({
+              name: backupVisitor.name,
+              purpose: backupVisitor.purpose,
+              invited_by: backupVisitor.invited_by || null,
+              date,
+              time,
+              service,
+            })
+
+            visitorsRestored++
+          } catch (error) {
+            console.error(
+              "Failed to restore visitor:",
+              backupVisitor,
+              error
+            )
+
+            visitorsSkipped++
+          }
+        }
+      }
+
+      /*
+       * ==========================================
+       * SUCCESS MESSAGE
+       * ==========================================
+       */
+
+      setMessage(
+        `Restore completed. ${attendanceRestored} attendance record(s) restored, ` +
+        `${attendanceSkipped} duplicate/missing attendance record(s) skipped, ` +
+        `${visitorsRestored} visitor(s) restored, ` +
+        `${visitorsSkipped} duplicate visitor(s) skipped.`
+      )
+
+      event.target.value = ""
+    } catch (error) {
+      console.error(error)
+      setMessage("Invalid or damaged backup file.")
+      event.target.value = ""
+    }
   }
+
+  reader.readAsText(file)
+}
 
   // Clear attendance only
   const clearAttendanceHistory = async () => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete ALL attendance history?\n\nYour members will NOT be deleted."
-    )
+  const confirmed = window.confirm(
+    "Are you sure you want to delete ALL attendance history?\n\nYour members and visitors will NOT be deleted."
+  )
 
-    if (!confirmed) {
-      return
-    }
-
-    try {
-      await db.attendance.clear()
-
-      setMessage("Attendance history cleared successfully.")
-    } catch (error) {
-      console.error(error)
-      setMessage("Failed to clear attendance history.")
-    }
+  if (!confirmed) {
+    return
   }
+
+  try {
+    const attendance = await api.getAttendance()
+
+    for (const record of attendance) {
+      await api.deleteAttendance(record.id)
+    }
+
+    setMessage("Attendance history cleared successfully.")
+  } catch (error) {
+    console.error(error)
+    setMessage("Failed to clear attendance history.")
+  }
+}
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-5 pb-8">

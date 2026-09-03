@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { db } from "../db/db";
+import { api } from "../api";
 import churchLogo from "../assets/COTF-LOGO.png";
 
 // TEMPORARY TEST MODE
@@ -39,43 +39,54 @@ function Attendance() {
   }, []);
 
   const loadData = async () => {
-    const savedMembers = await db.members.toArray();
+    try {
+      // Load members from Laravel
+      const savedMembers = await api.getMembers();
 
-    const activeMembers = savedMembers
-      .filter((member) => !member.archived)
-      .sort((a, b) =>
-        a.name.localeCompare(b.name, undefined, {
-          sensitivity: "base",
-        }),
+      const activeMembers = savedMembers
+        .filter((member) => !member.archived)
+        .sort((a, b) =>
+          a.name.localeCompare(b.name, undefined, {
+            sensitivity: "base",
+          }),
+        );
+
+      const today = new Date();
+      const sunday = today.getDay() === 0;
+
+      setIsSunday(sunday);
+
+      const sessionDate = getSessionDate();
+
+      setMembers(activeMembers);
+
+      if (!sessionDate) {
+        setAttendance([]);
+        setVisitors([]);
+        return;
+      }
+
+      // Load attendance from Laravel
+      const savedAttendance = await api.getAttendance();
+
+      const todayAttendance = savedAttendance.filter(
+        (record) => record.date === sessionDate,
       );
 
-    const today = new Date();
-    const sunday = today.getDay() === 0;
+      setAttendance(todayAttendance);
 
-    setIsSunday(sunday);
+      // Visitors now use Laravel API
+      const savedVisitors = await api.getVisitors();
 
-    const sessionDate = getSessionDate();
+      const todayVisitors = savedVisitors.filter(
+        (visitor) => visitor.date === sessionDate,
+      );
 
-    setMembers(activeMembers);
-
-    if (!sessionDate) {
-      setAttendance([]);
-      setVisitors([]);
-      return;
+      setVisitors(todayVisitors);
+    } catch (error) {
+      console.error("Failed to load attendance data:", error);
+      alert("Failed to connect to the server.");
     }
-
-    const savedAttendance = await db.attendance
-      .where("date")
-      .equals(sessionDate)
-      .toArray();
-
-    const savedVisitors = await db.visitors
-      .where("date")
-      .equals(sessionDate)
-      .toArray();
-
-    setAttendance(savedAttendance);
-    setVisitors(savedVisitors);
   };
 
   const markAttendance = async (member) => {
@@ -86,7 +97,7 @@ function Attendance() {
     }
 
     const existingRecord = attendance.find(
-      (record) => record.memberId === member.id,
+      (record) => record.member_id === member.id,
     );
 
     // Already present
@@ -99,34 +110,43 @@ function Attendance() {
         return;
       }
 
-      await db.attendance.delete(existingRecord.id);
+      try {
+        await api.deleteAttendance(existingRecord.id);
 
-      setAttendance((current) =>
-        current.filter((record) => record.id !== existingRecord.id),
-      );
+        setAttendance((current) =>
+          current.filter((record) => record.id !== existingRecord.id),
+        );
+      } catch (error) {
+        console.error("Failed to remove attendance:", error);
+        alert("Failed to remove attendance.");
+      }
 
       return;
     }
 
     // Mark present
-    const record = {
-      memberId: member.id,
-      memberName: member.name,
-      group: member.group,
-      date: sessionDate,
-      time: new Date().toLocaleTimeString(),
-      status: "Present",
-    };
+    const now = new Date();
 
-    const id = await db.attendance.add(record);
+    const time =
+      String(now.getHours()).padStart(2, "0") +
+      ":" +
+      String(now.getMinutes()).padStart(2, "0") +
+      ":" +
+      String(now.getSeconds()).padStart(2, "0");
 
-    setAttendance((current) => [
-      ...current,
-      {
-        ...record,
-        id,
-      },
-    ]);
+    try {
+      const savedRecord = await api.addAttendance({
+        member_id: member.id,
+        date: sessionDate,
+        time,
+        status: "Present",
+      });
+
+      setAttendance((current) => [...current, savedRecord]);
+    } catch (error) {
+      console.error("Failed to save attendance:", error);
+      alert("Failed to save attendance.");
+    }
   };
 
   const addVisitor = async (e) => {
@@ -138,30 +158,36 @@ function Attendance() {
       return;
     }
 
-    const visitor = {
-      name: visitorName.trim(),
-      purpose: visitorPurpose,
-      invitedBy: visitorInvitedBy.trim(),
-      date: sessionDate,
-      time: new Date().toLocaleTimeString(),
-      service: "Sunday Morning",
-    };
+    const now = new Date();
 
-    const id = await db.visitors.add(visitor);
+    const time =
+      String(now.getHours()).padStart(2, "0") +
+      ":" +
+      String(now.getMinutes()).padStart(2, "0") +
+      ":" +
+      String(now.getSeconds()).padStart(2, "0");
 
-    setVisitors((current) => [
-      ...current,
-      {
-        ...visitor,
-        id,
-      },
-    ]);
+    try {
+      const savedVisitor = await api.addVisitor({
+        name: visitorName.trim(),
+        purpose: visitorPurpose,
+        invited_by: visitorInvitedBy.trim() || null,
+        date: sessionDate,
+        time,
+        service: "Sunday Morning",
+      });
 
-    // Reset form
-    setVisitorName("");
-    setVisitorPurpose("First Time Visitor");
-    setVisitorInvitedBy("");
-    setShowVisitorForm(false);
+      setVisitors((current) => [...current, savedVisitor]);
+
+      // Reset form
+      setVisitorName("");
+      setVisitorPurpose("First Time Visitor");
+      setVisitorInvitedBy("");
+      setShowVisitorForm(false);
+    } catch (error) {
+      console.error("Failed to save visitor:", error);
+      alert("Failed to save visitor.");
+    }
   };
 
   const removeVisitor = async (visitor) => {
@@ -173,13 +199,24 @@ function Attendance() {
       return;
     }
 
-    await db.visitors.delete(visitor.id);
+    try {
+      await api.deleteVisitor(visitor.id);
 
-    setVisitors((current) => current.filter((item) => item.id !== visitor.id));
+      setVisitors((current) =>
+        current.filter((item) => item.id !== visitor.id),
+      );
+    } catch (error) {
+      console.error("Failed to remove visitor:", error);
+      alert("Failed to remove visitor.");
+    }
   };
 
   const getGroupCount = (group) => {
-    return attendance.filter((record) => record.group === group).length;
+    return attendance.filter((record) => {
+      const recordGroup = record.member?.group;
+
+      return recordGroup === group;
+    }).length;
   };
 
   const filteredMembers = members.filter(
@@ -189,7 +226,7 @@ function Attendance() {
   );
 
   const isPresent = (memberId) => {
-    return attendance.some((record) => record.memberId === memberId);
+    return attendance.some((record) => record.member_id === memberId);
   };
 
   // Attendance is closed outside Sunday
@@ -582,9 +619,9 @@ function Attendance() {
                           {visitor.purpose}
                         </p>
 
-                        {visitor.invitedBy && (
+                        {visitor.invited_by && (
                           <p className="mt-1 text-xs text-slate-500">
-                            Invited by: {visitor.invitedBy}
+                            Invited by: {visitor.invited_by}
                           </p>
                         )}
                       </div>
