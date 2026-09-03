@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     ? req.query.path.join("/")
     : req.query.path || "";
 
-  const targetUrl = `https://churchattendance.rf.gd/api/${path}`;
+  const targetUrl = `https://church-attendance-api-gghm.onrender.com/api/${path}`;
 
   try {
     const response = await fetch(targetUrl, {
