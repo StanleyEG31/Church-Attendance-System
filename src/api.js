@@ -1,4 +1,4 @@
-const API_BASE_URL = "/api";
+const API_BASE_URL = "https://church-attendance-api-gghm.onrender.com/api";
 
 export const api = {
   getMembers: async () => {
