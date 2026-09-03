@@ -161,54 +161,48 @@ getAttendance: async () => {
 
 
   addAttendance: async (attendance) => {
-    // Offline: save locally
-    if (isOffline()) {
-      const offlineRecord = {
-        ...attendance,
-        id: `offline-${Date.now()}`,
-        offline: true,
-      };
+  // Offline: save locally
+  if (isOffline()) {
+    const offlineRecord = {
+      ...attendance,
+      id: `offline-${Date.now()}`,
+      offline: true,
+    };
 
-      const queue = getAttendanceQueue();
+    const queue = getAttendanceQueue();
 
-      queue.push(offlineRecord);
+    queue.push(offlineRecord);
 
-      saveAttendanceQueue(queue);
+    saveAttendanceQueue(queue);
 
-      return offlineRecord;
-    }
+    return offlineRecord;
+  }
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/attendance`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(attendance),
-      });
+  // Online: send directly to the server
+  const response = await fetch(`${API_BASE_URL}/attendance`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(attendance),
+  });
 
-      if (!response.ok) {
-        throw new Error("Failed to save attendance");
-      }
+  if (!response.ok) {
+    const errorText = await response.text();
 
-      return response.json();
-    } catch (error) {
-      // Network failed while trying to save
-      const offlineRecord = {
-        ...attendance,
-        id: `offline-${Date.now()}`,
-        offline: true,
-      };
+    console.error(
+      "Attendance API error:",
+      response.status,
+      errorText,
+    );
 
-      const queue = getAttendanceQueue();
+    throw new Error(
+      `Failed to save attendance (${response.status})`,
+    );
+  }
 
-      queue.push(offlineRecord);
-
-      saveAttendanceQueue(queue);
-
-      return offlineRecord;
-    }
-  },
+  return response.json();
+},
 
   deleteAttendance: async (id) => {
     const response = await fetch(`${API_BASE_URL}/attendance/${id}`, {

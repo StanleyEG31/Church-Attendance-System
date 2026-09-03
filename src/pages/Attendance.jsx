@@ -9,15 +9,21 @@ const TEST_MODE = true;
 function getSessionDate() {
   const today = new Date();
 
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+
+  const localDate = `${year}-${month}-${day}`;
+
   if (TEST_MODE) {
-    return today.toISOString().split("T")[0];
+    return localDate;
   }
 
   if (today.getDay() !== 0) {
     return null;
   }
 
-  return today.toISOString().split("T")[0];
+  return localDate;
 }
 
 function Attendance() {
