@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://churchattendance.rf.gd/api";
+const API_BASE_URL = "/api";
 
 export const api = {
   getMembers: async () => {
