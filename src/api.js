@@ -1,14 +1,77 @@
-const API_BASE_URL = "https://church-attendance-api-gghm.onrender.com/api";
+const API_BASE_URL =
+  "https://church-attendance-api-gghm.onrender.com/api";
+
+const MEMBERS_CACHE = "church_members_cache";
+const ATTENDANCE_QUEUE = "church_attendance_queue";
+
+// --------------------------------------------------
+// Offline helpers
+// --------------------------------------------------
+
+const isOffline = () => !navigator.onLine;
+
+const getCachedMembers = () => {
+  try {
+    return JSON.parse(localStorage.getItem(MEMBERS_CACHE) || "[]");
+  } catch {
+    return [];
+  }
+};
+
+const cacheMembers = (members) => {
+  localStorage.setItem(MEMBERS_CACHE, JSON.stringify(members));
+};
+
+const getAttendanceQueue = () => {
+  try {
+    return JSON.parse(
+      localStorage.getItem(ATTENDANCE_QUEUE) || "[]",
+    );
+  } catch {
+    return [];
+  }
+};
+
+const saveAttendanceQueue = (queue) => {
+  localStorage.setItem(
+    ATTENDANCE_QUEUE,
+    JSON.stringify(queue),
+  );
+};
+
+// --------------------------------------------------
+// API
+// --------------------------------------------------
 
 export const api = {
+  // MEMBERS
   getMembers: async () => {
-    const response = await fetch(`${API_BASE_URL}/members`);
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch members");
+    if (isOffline()) {
+      return getCachedMembers();
     }
 
-    return response.json();
+    try {
+      const response = await fetch(`${API_BASE_URL}/members`);
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch members");
+      }
+
+      const members = await response.json();
+
+      cacheMembers(members);
+
+      return members;
+    } catch (error) {
+      const cachedMembers = getCachedMembers();
+
+      if (cachedMembers.length > 0) {
+        console.warn("Using cached members because server is unavailable.");
+        return cachedMembers;
+      }
+
+      throw error;
+    }
   },
 
   addMember: async (member) => {
@@ -24,7 +87,9 @@ export const api = {
       throw new Error("Failed to add member");
     }
 
-    return response.json();
+    const savedMember = await response.json();
+
+    return savedMember;
   },
 
   updateMember: async (id, member) => {
@@ -54,7 +119,7 @@ export const api = {
 
     return response.json();
   },
-  
+
   archiveMember: async (id) => {
     const response = await fetch(`${API_BASE_URL}/members/${id}`, {
       method: "PUT",
@@ -72,7 +137,14 @@ export const api = {
 
     return response.json();
   },
-  getAttendance: async () => {
+
+  // ATTENDANCE
+getAttendance: async () => {
+  if (isOffline()) {
+    return getAttendanceQueue();
+  }
+
+  try {
     const response = await fetch(`${API_BASE_URL}/attendance`);
 
     if (!response.ok) {
@@ -80,22 +152,62 @@ export const api = {
     }
 
     return response.json();
-  },
+  } catch (error) {
+    // If server is unavailable, show locally queued attendance
+    return getAttendanceQueue();
+  }
+},
+
+
 
   addAttendance: async (attendance) => {
-    const response = await fetch(`${API_BASE_URL}/attendance`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(attendance),
-    });
+    // Offline: save locally
+    if (isOffline()) {
+      const offlineRecord = {
+        ...attendance,
+        id: `offline-${Date.now()}`,
+        offline: true,
+      };
 
-    if (!response.ok) {
-      throw new Error("Failed to save attendance");
+      const queue = getAttendanceQueue();
+
+      queue.push(offlineRecord);
+
+      saveAttendanceQueue(queue);
+
+      return offlineRecord;
     }
 
-    return response.json();
+    try {
+      const response = await fetch(`${API_BASE_URL}/attendance`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(attendance),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save attendance");
+      }
+
+      return response.json();
+    } catch (error) {
+      // Network failed while trying to save
+      const offlineRecord = {
+        ...attendance,
+        id: `offline-${Date.now()}`,
+        offline: true,
+      };
+
+      const queue = getAttendanceQueue();
+
+      queue.push(offlineRecord);
+
+      saveAttendanceQueue(queue);
+
+      return offlineRecord;
+    }
   },
 
   deleteAttendance: async (id) => {
@@ -110,7 +222,12 @@ export const api = {
     return response.json();
   },
 
+  // VISITORS
   getVisitors: async () => {
+    if (isOffline()) {
+      return [];
+    }
+
     const response = await fetch(`${API_BASE_URL}/visitors`);
 
     if (!response.ok) {

@@ -34,9 +34,63 @@ function Attendance() {
   const [visitorPurpose, setVisitorPurpose] = useState("First Time Visitor");
   const [visitorInvitedBy, setVisitorInvitedBy] = useState("");
 
-  useEffect(() => {
-    loadData();
-  }, []);
+useEffect(() => {
+  loadData();
+
+const handleOnline = async () => {
+  try {
+    let queue = JSON.parse(
+      localStorage.getItem("church_attendance_queue") || "[]",
+    );
+
+    if (queue.length === 0) {
+      return;
+    }
+
+    console.log(`Syncing ${queue.length} offline attendance record(s)...`);
+
+    for (const record of queue) {
+      const { id, offline, ...attendance } = record;
+
+      try {
+        await api.addAttendance(attendance);
+
+        // Remove only the successfully synced record
+        queue = queue.filter((item) => item.id !== id);
+
+        localStorage.setItem(
+          "church_attendance_queue",
+          JSON.stringify(queue),
+        );
+
+        console.log(`Synced offline attendance: ${id}`);
+      } catch (error) {
+        console.error(`Failed to sync attendance: ${id}`, error);
+      }
+    }
+
+    if (queue.length === 0) {
+      localStorage.removeItem("church_attendance_queue");
+      console.log("Offline attendance synced successfully.");
+    } else {
+      console.log(
+        `${queue.length} offline attendance record(s) still waiting to sync.`,
+      );
+    }
+
+    await loadData();
+  } catch (error) {
+    console.error("Failed to sync offline attendance:", error);
+  }
+};
+
+
+  window.addEventListener("online", handleOnline);
+
+  return () => {
+    window.removeEventListener("online", handleOnline);
+  };
+}, []);
 
   const loadData = async () => {
     try {
