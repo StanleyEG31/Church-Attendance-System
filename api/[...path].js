@@ -1,35 +1,27 @@
-export default async function handler(req, res) {
-  const path = req.query.path || [];
-  const apiPath = path.join("/");
+export default async function handler(request) {
+  const url = new URL(request.url);
 
-  const targetUrl = `https://churchattendance.rf.gd/api/${apiPath}`;
+  const apiPath = url.pathname.replace(/^\/api/, "");
 
-  try {
-    const response = await fetch(targetUrl, {
-      method: req.method,
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body:
-        req.method === "GET" || req.method === "HEAD"
-          ? undefined
-          : JSON.stringify(req.body),
-    });
+  const targetUrl = `https://churchattendance.rf.gd/api${apiPath}${url.search}`;
 
-    const data = await response.text();
+  const response = await fetch(targetUrl, {
+    method: request.method,
+    headers: {
+      Accept: "application/json",
+      "Content-Type": request.headers.get("content-type") || "application/json",
+    },
+    body:
+      request.method === "GET" || request.method === "HEAD"
+        ? undefined
+        : await request.text(),
+  });
 
-    res.status(response.status);
-    res.setHeader(
-      "Content-Type",
-      response.headers.get("content-type") || "application/json"
-    );
-
-    res.send(data);
-  } catch (error) {
-    res.status(500).json({
-      error: "API proxy failed",
-      message: error.message,
-    });
-  }
+  return new Response(await response.text(), {
+    status: response.status,
+    headers: {
+      "Content-Type":
+        response.headers.get("content-type") || "application/json",
+    },
+  });
 }
