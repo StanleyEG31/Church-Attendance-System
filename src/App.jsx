@@ -6,8 +6,10 @@ import Settings from "./pages/Settings"
 import BottomNav from "./components/BottomNav"
 import Dashboard from "./pages/Dashboard"
 
+
 function App() {
   const [activePage, setActivePage] = useState("attendance")
+
 
   return (
     <div className="min-h-screen bg-gray-100 pb-20">

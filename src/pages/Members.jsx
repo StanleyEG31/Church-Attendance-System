@@ -13,7 +13,33 @@ function Members() {
   const [editingGroup, setEditingGroup] = useState("Adults");
 
   useEffect(() => {
-    loadMembers();
+    const initializeMembers = async () => {
+      try {
+        await loadMembers();
+      } catch (error) {
+        console.error("Failed to initialize members:", error);
+      }
+    };
+
+    initializeMembers();
+
+    const handleOnline = async () => {
+      try {
+        // Give the browser a moment to fully restore the connection
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        await api.syncOfflineData();
+        await loadMembers();
+      } catch (error) {
+        console.error("Failed to sync offline data:", error);
+      }
+    };
+
+    window.addEventListener("online", handleOnline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+    };
   }, []);
 
   const loadMembers = async () => {
@@ -196,9 +222,7 @@ function Members() {
                 {youthCount}
               </p>
 
-              <p className="mt-0.5 text-xs font-medium text-slate-500">
-                Youth
-              </p>
+              <p className="mt-0.5 text-xs font-medium text-slate-500">Youth</p>
             </div>
 
             {/* Children */}
@@ -444,4 +468,3 @@ function Members() {
 }
 
 export default Members;
-

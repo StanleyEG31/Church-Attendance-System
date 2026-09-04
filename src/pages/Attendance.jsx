@@ -4,7 +4,7 @@ import churchLogo from "../assets/COTF-LOGO.png";
 
 // TEMPORARY TEST MODE
 // Change this to false before final deployment.
-const TEST_MODE = true;
+const TEST_MODE = false;
 
 function getSessionDate() {
   const today = new Date();
@@ -40,63 +40,28 @@ function Attendance() {
   const [visitorPurpose, setVisitorPurpose] = useState("First Time Visitor");
   const [visitorInvitedBy, setVisitorInvitedBy] = useState("");
 
-useEffect(() => {
-  loadData();
+  useEffect(() => {
+    loadData();
 
-const handleOnline = async () => {
-  try {
-    let queue = JSON.parse(
-      localStorage.getItem("church_attendance_queue") || "[]",
-    );
-
-    if (queue.length === 0) {
-      return;
-    }
-
-    console.log(`Syncing ${queue.length} offline attendance record(s)...`);
-
-    for (const record of queue) {
-      const { id, offline, ...attendance } = record;
-
+    const handleOnline = async () => {
       try {
-        await api.addAttendance(attendance);
+        // Give the browser a moment to fully restore the connection
+        await new Promise((resolve) => setTimeout(resolve, 1000));
 
-        // Remove only the successfully synced record
-        queue = queue.filter((item) => item.id !== id);
+        await api.syncOfflineData();
 
-        localStorage.setItem(
-          "church_attendance_queue",
-          JSON.stringify(queue),
-        );
-
-        console.log(`Synced offline attendance: ${id}`);
+        await loadData();
       } catch (error) {
-        console.error(`Failed to sync attendance: ${id}`, error);
+        console.error("Failed to sync offline data:", error);
       }
-    }
+    };
 
-    if (queue.length === 0) {
-      localStorage.removeItem("church_attendance_queue");
-      console.log("Offline attendance synced successfully.");
-    } else {
-      console.log(
-        `${queue.length} offline attendance record(s) still waiting to sync.`,
-      );
-    }
+    window.addEventListener("online", handleOnline);
 
-    await loadData();
-  } catch (error) {
-    console.error("Failed to sync offline attendance:", error);
-  }
-};
-
-
-  window.addEventListener("online", handleOnline);
-
-  return () => {
-    window.removeEventListener("online", handleOnline);
-  };
-}, []);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+    };
+  }, []);
 
   const loadData = async () => {
     try {
@@ -171,6 +136,29 @@ const handleOnline = async () => {
       }
 
       try {
+        // Offline record: remove it from the local queue
+        if (existingRecord.offline) {
+          const queue = JSON.parse(
+            localStorage.getItem("church_attendance_queue") || "[]",
+          );
+
+          const updatedQueue = queue.filter(
+            (record) => record.id !== existingRecord.id,
+          );
+
+          localStorage.setItem(
+            "church_attendance_queue",
+            JSON.stringify(updatedQueue),
+          );
+
+          setAttendance((current) =>
+            current.filter((record) => record.id !== existingRecord.id),
+          );
+
+          return;
+        }
+
+        // Online record: delete it from the server
         await api.deleteAttendance(existingRecord.id);
 
         setAttendance((current) =>
@@ -273,9 +261,9 @@ const handleOnline = async () => {
 
   const getGroupCount = (group) => {
     return attendance.filter((record) => {
-      const recordGroup = record.member?.group;
+      const member = members.find((member) => member.id === record.member_id);
 
-      return recordGroup === group;
+      return member?.group === group;
     }).length;
   };
 
