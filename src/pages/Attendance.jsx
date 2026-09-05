@@ -4,7 +4,7 @@ import churchLogo from "../assets/COTF-LOGO.png";
 
 // TEMPORARY TEST MODE
 // Change this to false before final deployment.
-const TEST_MODE = true;
+const TEST_MODE = false;
 
 function getSessionDate() {
   const today = new Date();
