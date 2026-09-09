@@ -11,6 +11,12 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
 
+      workbox: {
+        globPatterns: [
+          "**/*.{js,css,html,ico,png,svg,webp}"
+        ],
+      },
+
       manifest: {
         name: "Church Attendance System",
         short_name: "Attendance",
