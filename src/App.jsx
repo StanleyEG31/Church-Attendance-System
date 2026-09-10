@@ -8,13 +8,13 @@ import Dashboard from "./pages/Dashboard"
 import SyncOverlay from "./components/SyncOverlay"
 import { api } from "./api"
 
-
 function App() {
   const [activePage, setActivePage] = useState("attendance")
   const [syncStatus, setSyncStatus] = useState(null)
 
-
   useEffect(() => {
+    let syncing = false
+
     const handleSyncStatus = (event) => {
       setSyncStatus(event.detail)
 
@@ -29,27 +29,40 @@ function App() {
       }
     }
 
-    window.addEventListener("church-sync-status", handleSyncStatus)
+    const runSync = async () => {
+      if (syncing) {
+        console.log("App sync already running. Skipping duplicate sync.")
+        return
+      }
 
-    const handleOnline = async () => {
-      if (api.hasPendingSync()) {
+      if (!navigator.onLine) {
+        return
+      }
+
+      if (!api.hasPendingSync()) {
+        return
+      }
+
+      syncing = true
+
+      try {
         await api.syncOfflineData()
+      } finally {
+        syncing = false
       }
     }
 
-    window.addEventListener("online", handleOnline)
+    window.addEventListener("church-sync-status", handleSyncStatus)
+    window.addEventListener("online", runSync)
 
     // Check when the app starts
-    if (navigator.onLine && api.hasPendingSync()) {
-      api.syncOfflineData()
-    }
+    runSync()
 
     return () => {
       window.removeEventListener("church-sync-status", handleSyncStatus)
-      window.removeEventListener("online", handleOnline)
+      window.removeEventListener("online", runSync)
     }
   }, [])
-
 
   return (
     <div className="min-h-screen bg-gray-100 pb-20">
@@ -59,7 +72,7 @@ function App() {
 
       {/* Page */}
       {activePage === "dashboard" && <Dashboard />}
-      
+
       {activePage === "attendance" && <Attendance />}
 
       {activePage === "members" && <Members />}

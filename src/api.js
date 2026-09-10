@@ -10,6 +10,7 @@ const ATTENDANCE_DELETE_QUEUE = "church_attendance_delete_queue";
 const VISITORS_CACHE = "church_visitors_cache";
 const VISITORS_QUEUE = "church_visitors_queue";
 const VISITORS_DELETE_QUEUE = "church_visitors_delete_queue";
+const OFFLINE_ID_MAP = "church_offline_id_map";
 
 const notifySyncStatus = (status) => {
   window.dispatchEvent(
@@ -17,6 +18,34 @@ const notifySyncStatus = (status) => {
       detail: status,
     }),
   );
+};
+
+const getOfflineIdMap = () => {
+  try {
+    return JSON.parse(localStorage.getItem(OFFLINE_ID_MAP) || "{}");
+  } catch {
+    return {};
+  }
+};
+
+const saveOfflineIdMap = (map) => {
+  localStorage.setItem(OFFLINE_ID_MAP, JSON.stringify(map));
+};
+
+const saveOfflineIdMapping = (offlineId, serverId) => {
+  const map = getOfflineIdMap();
+
+  map[offlineId] = serverId;
+
+  saveOfflineIdMap(map);
+
+  console.log(`Saved offline ID mapping: ${offlineId} → ${serverId}`);
+};
+
+const resolveOfflineId = (id) => {
+  const map = getOfflineIdMap();
+
+  return map[id] || id;
 };
 
 const getPendingSyncCount = () => {
@@ -379,7 +408,17 @@ export const api = {
             throw new Error("Failed to sync member");
           }
 
-          console.log(`Synced offline member: ${member.name}`);
+          const savedMember = await response.json();
+
+          // Save the relationship between the temporary offline ID
+          // and the real database ID.
+          if (member.id && savedMember.id) {
+            saveOfflineIdMapping(member.id, savedMember.id);
+          }
+
+          console.log(
+            `Synced offline member: ${member.name} (${member.id} → ${savedMember.id})`,
+          );
         } catch (error) {
           console.error(`Failed to sync offline member: ${member.name}`, error);
 
@@ -783,7 +822,6 @@ export const api = {
       return;
     }
 
-    // Prevent multiple global syncs from running at the same time
     if (globalSyncing) {
       console.log("Global sync already running. Skipping duplicate sync.");
       return;
@@ -798,7 +836,6 @@ export const api = {
     globalSyncing = true;
 
     console.log("Starting global offline sync...");
-
     notifySyncStatus("syncing");
 
     try {
@@ -810,7 +847,7 @@ export const api = {
       // -----------------------------------------
       // 2. Sync offline member updates
       // -----------------------------------------
-      let memberUpdateQueue = getMembersUpdateQueue();
+      const memberUpdateQueue = getMembersUpdateQueue();
 
       if (memberUpdateQueue.length > 0) {
         console.log(
@@ -823,19 +860,48 @@ export const api = {
           try {
             const { id, offline, ...memberData } = member;
 
-            const response = await fetch(`${API_BASE_URL}/members/${id}`, {
-              method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
+            const realMemberId = resolveOfflineId(id);
+
+            // The member was created offline but has not received
+            // a real database ID yet.
+            if (
+              realMemberId === id &&
+              String(id).startsWith("offline-member-")
+            ) {
+              console.warn(
+                `Waiting for real ID before syncing member update: ${member.name}`,
+              );
+
+              remainingMemberUpdates.push(member);
+              continue;
+            }
+
+            const response = await fetch(
+              `${API_BASE_URL}/members/${realMemberId}`,
+              {
+                method: "PUT",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(memberData),
               },
-              body: JSON.stringify(memberData),
-            });
+            );
 
             if (!response.ok) {
+              const errorText = await response.text();
+
+              console.error(
+                "Member update API error:",
+                response.status,
+                errorText,
+              );
+
               throw new Error("Failed to sync member update");
             }
 
-            console.log(`Synced member update: ${member.name}`);
+            console.log(
+              `Synced member update: ${member.name} (${id} → ${realMemberId})`,
+            );
           } catch (error) {
             console.error(
               `Failed to sync member update: ${member.name}`,
@@ -848,6 +914,7 @@ export const api = {
 
         saveMembersUpdateQueue(remainingMemberUpdates);
 
+        // Refresh members cache
         try {
           const response = await fetch(`${API_BASE_URL}/members`);
 
@@ -871,7 +938,7 @@ export const api = {
       // -----------------------------------------
       // 3. Sync offline member deletions
       // -----------------------------------------
-      let memberDeleteQueue = JSON.parse(
+      const memberDeleteQueue = JSON.parse(
         localStorage.getItem(MEMBERS_DELETE_QUEUE) || "[]",
       );
 
@@ -884,16 +951,34 @@ export const api = {
 
         for (const id of memberDeleteQueue) {
           try {
-            const response = await fetch(`${API_BASE_URL}/members/${id}`, {
-              method: "DELETE",
-            });
+            const realMemberId = resolveOfflineId(id);
 
-            // 404 means already deleted
+            // If this is still a temporary ID, wait until the
+            // member receives a real server ID.
+            if (
+              realMemberId === id &&
+              String(id).startsWith("offline-member-")
+            ) {
+              console.warn(
+                `Waiting for real ID before syncing member deletion: ${id}`,
+              );
+
+              remainingMemberDeletes.push(id);
+              continue;
+            }
+
+            const response = await fetch(
+              `${API_BASE_URL}/members/${realMemberId}`,
+              {
+                method: "DELETE",
+              },
+            );
+
             if (!response.ok && response.status !== 404) {
               throw new Error("Failed to sync member deletion");
             }
 
-            console.log(`Synced member deletion: ${id}`);
+            console.log(`Synced member deletion: ${id} → ${realMemberId}`);
           } catch (error) {
             console.error(`Failed to sync member deletion: ${id}`, error);
 
@@ -929,7 +1014,7 @@ export const api = {
       // -----------------------------------------
       // 4. Sync offline attendance
       // -----------------------------------------
-      let attendanceQueue = getAttendanceQueue();
+      const attendanceQueue = getAttendanceQueue();
 
       if (attendanceQueue.length > 0) {
         console.log(
@@ -941,6 +1026,24 @@ export const api = {
         for (const record of attendanceQueue) {
           try {
             const { id, offline, ...attendance } = record;
+
+            const realMemberId = resolveOfflineId(attendance.member_id);
+
+            // Do not send attendance until the member has
+            // received a real database ID.
+            if (
+              realMemberId === attendance.member_id &&
+              String(attendance.member_id).startsWith("offline-member-")
+            ) {
+              console.warn(
+                `Waiting for real member ID before syncing attendance: ${attendance.member_id}`,
+              );
+
+              remainingAttendanceQueue.push(record);
+              continue;
+            }
+
+            attendance.member_id = realMemberId;
 
             const response = await fetch(`${API_BASE_URL}/attendance`, {
               method: "POST",
@@ -979,7 +1082,9 @@ export const api = {
 
             cacheAttendance(updatedAttendance);
 
-            console.log(`Synced offline attendance: ${id}`);
+            console.log(
+              `Synced offline attendance: ${id} (${record.member_id} → ${realMemberId})`,
+            );
           } catch (error) {
             console.error(`Failed to sync attendance: ${record.id}`, error);
 
@@ -993,7 +1098,7 @@ export const api = {
       // -----------------------------------------
       // 5. Sync attendance deletions
       // -----------------------------------------
-      let attendanceDeleteQueue = getAttendanceDeleteQueue();
+      const attendanceDeleteQueue = getAttendanceDeleteQueue();
 
       if (attendanceDeleteQueue.length > 0) {
         console.log(
@@ -1008,7 +1113,6 @@ export const api = {
               method: "DELETE",
             });
 
-            // 404 means already deleted
             if (!response.ok && response.status !== 404) {
               throw new Error("Failed to sync attendance deletion");
             }
@@ -1032,7 +1136,7 @@ export const api = {
       // -----------------------------------------
       // 7. Sync visitor deletions
       // -----------------------------------------
-      let visitorDeleteQueue = JSON.parse(
+      const visitorDeleteQueue = JSON.parse(
         localStorage.getItem(VISITORS_DELETE_QUEUE) || "[]",
       );
 
@@ -1049,7 +1153,6 @@ export const api = {
               method: "DELETE",
             });
 
-            // 404 means already deleted
             if (!response.ok && response.status !== 404) {
               throw new Error("Failed to sync visitor deletion");
             }
