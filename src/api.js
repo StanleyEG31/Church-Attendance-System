@@ -11,6 +11,36 @@ const VISITORS_CACHE = "church_visitors_cache";
 const VISITORS_QUEUE = "church_visitors_queue";
 const VISITORS_DELETE_QUEUE = "church_visitors_delete_queue";
 
+const notifySyncStatus = (status) => {
+  window.dispatchEvent(
+    new CustomEvent("church-sync-status", {
+      detail: status,
+    }),
+  );
+};
+
+const getPendingSyncCount = () => {
+  const queues = [
+    MEMBERS_QUEUE,
+    MEMBERS_UPDATE_QUEUE,
+    MEMBERS_DELETE_QUEUE,
+    ATTENDANCE_QUEUE,
+    ATTENDANCE_DELETE_QUEUE,
+    VISITORS_QUEUE,
+    VISITORS_DELETE_QUEUE,
+  ];
+
+  return queues.reduce((total, key) => {
+    try {
+      const queue = JSON.parse(localStorage.getItem(key) || "[]");
+
+      return total + (Array.isArray(queue) ? queue.length : 0);
+    } catch {
+      return total;
+    }
+  }, 0);
+};
+
 let membersSyncing = false;
 
 // --------------------------------------------------
@@ -95,6 +125,10 @@ const saveAttendanceDeleteQueue = (queue) => {
 // --------------------------------------------------
 
 export const api = {
+  hasPendingSync: () => getPendingSyncCount() > 0,
+
+  getPendingSyncCount: () => getPendingSyncCount(),
+
   // MEMBERS
   getMembers: async () => {
     if (isOffline()) {
@@ -748,268 +782,304 @@ export const api = {
       return;
     }
 
+    const pendingBeforeSync = getPendingSyncCount();
+
+    if (pendingBeforeSync === 0) {
+      return;
+    }
+
     console.log("Starting global offline sync...");
 
-    // 1. Sync offline members
-    await api.syncOfflineMembers();
+    notifySyncStatus("syncing");
 
-    // 2. Sync offline member updates
-    let memberUpdateQueue = getMembersUpdateQueue();
+    try {
+      // 1. Sync offline members
+      await api.syncOfflineMembers();
 
-    if (memberUpdateQueue.length > 0) {
-      console.log(
-        `Syncing ${memberUpdateQueue.length} offline member update(s)...`,
-      );
+      // 2. Sync offline member updates
+      let memberUpdateQueue = getMembersUpdateQueue();
 
-      const remainingMemberUpdates = [];
-
-      for (const member of memberUpdateQueue) {
-        try {
-          const { id, offline, ...memberData } = member;
-
-          const response = await fetch(`${API_BASE_URL}/members/${id}`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(memberData),
-          });
-
-          if (!response.ok) {
-            throw new Error("Failed to sync member update");
-          }
-
-          console.log(`Synced member update: ${member.name}`);
-        } catch (error) {
-          console.error(`Failed to sync member update: ${member.name}`, error);
-
-          remainingMemberUpdates.push(member);
-        }
-      }
-
-      saveMembersUpdateQueue(remainingMemberUpdates);
-
-      // Refresh members cache after updates
-      try {
-        const response = await fetch(`${API_BASE_URL}/members`);
-
-        if (!response.ok) {
-          throw new Error("Failed to refresh members after updates");
-        }
-
-        const serverMembers = await response.json();
-
-        cacheMembers(serverMembers);
-
-        console.log("Members cache refreshed after offline updates.");
-      } catch (error) {
-        console.error("Failed to refresh members cache after updates:", error);
-      }
-    }
-
-    // 3. Sync offline member deletions
-    let memberDeleteQueue = JSON.parse(
-      localStorage.getItem(MEMBERS_DELETE_QUEUE) || "[]",
-    );
-
-    if (memberDeleteQueue.length > 0) {
-      console.log(
-        `Syncing ${memberDeleteQueue.length} offline member deletion(s)...`,
-      );
-
-      const remainingMemberDeletes = [];
-
-      for (const id of memberDeleteQueue) {
-        try {
-          const response = await fetch(`${API_BASE_URL}/members/${id}`, {
-            method: "DELETE",
-          });
-
-          // 404 means the member is already deleted on the server.
-          if (!response.ok && response.status !== 404) {
-            throw new Error("Failed to sync member deletion");
-          }
-
-          console.log(`Synced member deletion: ${id}`);
-        } catch (error) {
-          console.error(`Failed to sync member deletion: ${id}`, error);
-
-          remainingMemberDeletes.push(id);
-        }
-      }
-
-      localStorage.setItem(
-        MEMBERS_DELETE_QUEUE,
-        JSON.stringify(remainingMemberDeletes),
-      );
-
-      // Refresh members cache after deletions
-      try {
-        const response = await fetch(`${API_BASE_URL}/members`);
-
-        if (!response.ok) {
-          throw new Error("Failed to refresh members after deletions");
-        }
-
-        const serverMembers = await response.json();
-
-        cacheMembers(serverMembers);
-
-        console.log("Members cache refreshed after offline deletions.");
-      } catch (error) {
-        console.error(
-          "Failed to refresh members cache after deletions:",
-          error,
+      if (memberUpdateQueue.length > 0) {
+        console.log(
+          `Syncing ${memberUpdateQueue.length} offline member update(s)...`,
         );
-      }
-    }
-    // 4. Sync offline attendance records
-    let attendanceQueue = getAttendanceQueue();
 
-    if (attendanceQueue.length > 0) {
-      console.log(
-        `Syncing ${attendanceQueue.length} offline attendance record(s)...`,
-      );
+        const remainingMemberUpdates = [];
 
-      const remainingAttendanceQueue = [];
+        for (const member of memberUpdateQueue) {
+          try {
+            const { id, offline, ...memberData } = member;
 
-      for (const record of attendanceQueue) {
-        try {
-          const { id, offline, ...attendance } = record;
+            const response = await fetch(`${API_BASE_URL}/members/${id}`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(memberData),
+            });
 
-          const response = await fetch(`${API_BASE_URL}/attendance`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(attendance),
-          });
+            if (!response.ok) {
+              throw new Error("Failed to sync member update");
+            }
 
-          if (!response.ok) {
-            const errorText = await response.text();
-
+            console.log(`Synced member update: ${member.name}`);
+          } catch (error) {
             console.error(
-              "Attendance sync API error:",
-              response.status,
-              errorText,
+              `Failed to sync member update: ${member.name}`,
+              error,
             );
 
-            throw new Error("Failed to sync attendance");
+            remainingMemberUpdates.push(member);
+          }
+        }
+
+        saveMembersUpdateQueue(remainingMemberUpdates);
+
+        // Refresh members cache after updates
+        try {
+          const response = await fetch(`${API_BASE_URL}/members`);
+
+          if (!response.ok) {
+            throw new Error("Failed to refresh members after updates");
           }
 
-          const savedAttendance = await response.json();
+          const serverMembers = await response.json();
 
-          // Update local attendance cache
-          const cachedAttendance = getCachedAttendance();
+          cacheMembers(serverMembers);
 
-          const updatedAttendance = [
-            ...cachedAttendance.filter(
-              (item) =>
-                !(
-                  item.member_id === savedAttendance.member_id &&
-                  item.date === savedAttendance.date
-                ),
-            ),
-            savedAttendance,
-          ];
-
-          cacheAttendance(updatedAttendance);
-
-          console.log(`Synced offline attendance: ${id}`);
+          console.log("Members cache refreshed after offline updates.");
         } catch (error) {
-          console.error(`Failed to sync attendance: ${record.id}`, error);
-
-          remainingAttendanceQueue.push(record);
+          console.error(
+            "Failed to refresh members cache after updates:",
+            error,
+          );
         }
       }
 
-      saveAttendanceQueue(remainingAttendanceQueue);
-    }
-    // 5. Sync attendance deletions
-    let deleteQueue = getAttendanceDeleteQueue();
-
-    if (deleteQueue.length > 0) {
-      console.log(
-        `Syncing ${deleteQueue.length} offline attendance deletion(s)...`,
+      // 3. Sync offline member deletions
+      let memberDeleteQueue = JSON.parse(
+        localStorage.getItem(MEMBERS_DELETE_QUEUE) || "[]",
       );
 
-      const remainingDeleteQueue = [];
-
-      for (const id of deleteQueue) {
-        try {
-          await api.deleteAttendance(id);
-
-          console.log(`Synced attendance deletion: ${id}`);
-        } catch (error) {
-          console.error(`Failed to sync attendance deletion: ${id}`, error);
-
-          remainingDeleteQueue.push(id);
-        }
-      }
-
-      saveAttendanceDeleteQueue(remainingDeleteQueue);
-    }
-
-    // 6. Sync offline visitor deletions
-    let visitorDeleteQueue = JSON.parse(
-      localStorage.getItem(VISITORS_DELETE_QUEUE) || "[]",
-    );
-
-    if (visitorDeleteQueue.length > 0) {
-      console.log(
-        `Syncing ${visitorDeleteQueue.length} offline visitor deletion(s)...`,
-      );
-
-      const remainingVisitorDeletes = [];
-
-      for (const id of visitorDeleteQueue) {
-        try {
-          const response = await fetch(`${API_BASE_URL}/visitors/${id}`, {
-            method: "DELETE",
-          });
-
-          // 404 means the visitor is already deleted on the server.
-          if (!response.ok && response.status !== 404) {
-            throw new Error("Failed to sync visitor deletion");
-          }
-
-          console.log(`Synced visitor deletion: ${id}`);
-        } catch (error) {
-          console.error(`Failed to sync visitor deletion: ${id}`, error);
-
-          remainingVisitorDeletes.push(id);
-        }
-      }
-
-      localStorage.setItem(
-        VISITORS_DELETE_QUEUE,
-        JSON.stringify(remainingVisitorDeletes),
-      );
-
-      // Refresh visitors cache after deletions
-      try {
-        const response = await fetch(`${API_BASE_URL}/visitors`);
-
-        if (!response.ok) {
-          throw new Error("Failed to refresh visitors after deletions");
-        }
-
-        const visitors = await response.json();
-
-        localStorage.setItem(VISITORS_CACHE, JSON.stringify(visitors));
-
-        console.log("Visitors cache refreshed after offline deletions.");
-      } catch (error) {
-        console.error(
-          "Failed to refresh visitors cache after deletions:",
-          error,
+      if (memberDeleteQueue.length > 0) {
+        console.log(
+          `Syncing ${memberDeleteQueue.length} offline member deletion(s)...`,
         );
+
+        const remainingMemberDeletes = [];
+
+        for (const id of memberDeleteQueue) {
+          try {
+            const response = await fetch(`${API_BASE_URL}/members/${id}`, {
+              method: "DELETE",
+            });
+
+            // 404 means the member is already deleted on the server.
+            if (!response.ok && response.status !== 404) {
+              throw new Error("Failed to sync member deletion");
+            }
+
+            console.log(`Synced member deletion: ${id}`);
+          } catch (error) {
+            console.error(`Failed to sync member deletion: ${id}`, error);
+
+            remainingMemberDeletes.push(id);
+          }
+        }
+
+        localStorage.setItem(
+          MEMBERS_DELETE_QUEUE,
+          JSON.stringify(remainingMemberDeletes),
+        );
+
+        // Refresh members cache after deletions
+        try {
+          const response = await fetch(`${API_BASE_URL}/members`);
+
+          if (!response.ok) {
+            throw new Error("Failed to refresh members after deletions");
+          }
+
+          const serverMembers = await response.json();
+
+          cacheMembers(serverMembers);
+
+          console.log("Members cache refreshed after offline deletions.");
+        } catch (error) {
+          console.error(
+            "Failed to refresh members cache after deletions:",
+            error,
+          );
+        }
       }
+      // 4. Sync offline attendance records
+      let attendanceQueue = getAttendanceQueue();
+
+      if (attendanceQueue.length > 0) {
+        console.log(
+          `Syncing ${attendanceQueue.length} offline attendance record(s)...`,
+        );
+
+        const remainingAttendanceQueue = [];
+
+        for (const record of attendanceQueue) {
+          try {
+            const { id, offline, ...attendance } = record;
+
+            const response = await fetch(`${API_BASE_URL}/attendance`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(attendance),
+            });
+
+            if (!response.ok) {
+              const errorText = await response.text();
+
+              console.error(
+                "Attendance sync API error:",
+                response.status,
+                errorText,
+              );
+
+              throw new Error("Failed to sync attendance");
+            }
+
+            const savedAttendance = await response.json();
+
+            // Update local attendance cache
+            const cachedAttendance = getCachedAttendance();
+
+            const updatedAttendance = [
+              ...cachedAttendance.filter(
+                (item) =>
+                  !(
+                    item.member_id === savedAttendance.member_id &&
+                    item.date === savedAttendance.date
+                  ),
+              ),
+              savedAttendance,
+            ];
+
+            cacheAttendance(updatedAttendance);
+
+            console.log(`Synced offline attendance: ${id}`);
+          } catch (error) {
+            console.error(`Failed to sync attendance: ${record.id}`, error);
+
+            remainingAttendanceQueue.push(record);
+          }
+        }
+
+        saveAttendanceQueue(remainingAttendanceQueue);
+      }
+      // 5. Sync attendance deletions
+      let deleteQueue = getAttendanceDeleteQueue();
+
+      if (deleteQueue.length > 0) {
+        console.log(
+          `Syncing ${deleteQueue.length} offline attendance deletion(s)...`,
+        );
+
+        const remainingDeleteQueue = [];
+
+        for (const id of deleteQueue) {
+          try {
+            await api.deleteAttendance(id);
+
+            console.log(`Synced attendance deletion: ${id}`);
+          } catch (error) {
+            console.error(`Failed to sync attendance deletion: ${id}`, error);
+
+            remainingDeleteQueue.push(id);
+          }
+        }
+
+        saveAttendanceDeleteQueue(remainingDeleteQueue);
+      }
+
+      // 6. Sync offline visitor deletions
+      let visitorDeleteQueue = JSON.parse(
+        localStorage.getItem(VISITORS_DELETE_QUEUE) || "[]",
+      );
+
+      if (visitorDeleteQueue.length > 0) {
+        console.log(
+          `Syncing ${visitorDeleteQueue.length} offline visitor deletion(s)...`,
+        );
+
+        const remainingVisitorDeletes = [];
+
+        for (const id of visitorDeleteQueue) {
+          try {
+            const response = await fetch(`${API_BASE_URL}/visitors/${id}`, {
+              method: "DELETE",
+            });
+
+            // 404 means the visitor is already deleted on the server.
+            if (!response.ok && response.status !== 404) {
+              throw new Error("Failed to sync visitor deletion");
+            }
+
+            console.log(`Synced visitor deletion: ${id}`);
+          } catch (error) {
+            console.error(`Failed to sync visitor deletion: ${id}`, error);
+
+            remainingVisitorDeletes.push(id);
+          }
+        }
+
+        localStorage.setItem(
+          VISITORS_DELETE_QUEUE,
+          JSON.stringify(remainingVisitorDeletes),
+        );
+
+        // Refresh visitors cache after deletions
+        try {
+          const response = await fetch(`${API_BASE_URL}/visitors`);
+
+          if (!response.ok) {
+            throw new Error("Failed to refresh visitors after deletions");
+          }
+
+          const visitors = await response.json();
+
+          localStorage.setItem(VISITORS_CACHE, JSON.stringify(visitors));
+
+          console.log("Visitors cache refreshed after offline deletions.");
+        } catch (error) {
+          console.error(
+            "Failed to refresh visitors cache after deletions:",
+            error,
+          );
+        }
+      }
+
+      // 7. Sync offline visitors
+      const remaining = getPendingSyncCount();
+
+      console.log("Global offline sync completed.");
+
+      if (remaining === 0) {
+        notifySyncStatus("success");
+      } else {
+        notifySyncStatus("partial");
+      }
+
+      return {
+        success: remaining === 0,
+        pending: remaining,
+      };
+    } catch (error) {
+      console.error("Global offline sync failed:", error);
+
+      notifySyncStatus("failed");
+
+      return {
+        success: false,
+        pending: getPendingSyncCount(),
+      };
     }
-
-    // 7. Sync offline visitors
-    await api.syncOfflineVisitors();
-
-    console.log("Global offline sync completed.");
   },
 };

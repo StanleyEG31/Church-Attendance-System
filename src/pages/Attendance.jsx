@@ -42,25 +42,6 @@ function Attendance() {
 
   useEffect(() => {
     loadData();
-
-    const handleOnline = async () => {
-      try {
-        // Give the browser a moment to fully restore the connection
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        await api.syncOfflineData();
-
-        await loadData();
-      } catch (error) {
-        console.error("Failed to sync offline data:", error);
-      }
-    };
-
-    window.addEventListener("online", handleOnline);
-
-    return () => {
-      window.removeEventListener("online", handleOnline);
-    };
   }, []);
 
   const loadData = async () => {
