@@ -4,7 +4,7 @@ import churchLogo from "../assets/COTF-LOGO.png";
 
 // TEMPORARY TEST MODE
 // Change this to false before final deployment.
-const TEST_MODE = true;
+const TEST_MODE = false;
 
 function getSessionDate() {
   const today = new Date();
@@ -298,12 +298,12 @@ function Attendance() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-5 pb-8">
+    <div className="min-h-screen bg-transparent px-4 py-5 pb-8">
       <div className="mx-auto max-w-md">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white p-1.5 shadow-sm ring-1 ring-slate-100">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-transparent p-1.5">
               <img
                 src={churchLogo}
                 alt="COTF Church Logo"
@@ -312,11 +312,11 @@ function Attendance() {
             </div>
 
             <div className="min-w-0">
-              <h1 className="text-xl font-bold text-slate-800">
+              <h1 className="text-xl font-bold text-white/75">
                 Church Attendance
               </h1>
 
-              <p className="mt-0.5 text-sm text-slate-500">
+              <p className="mt-0.5 text-sm text-white/50">
                 Sunday Morning Service
               </p>
             </div>
@@ -332,7 +332,7 @@ function Attendance() {
         </div>
 
         {/* Total Attendance */}
-        <div className="relative mb-4 overflow-hidden rounded-3xl bg-blue-600 p-6 text-center shadow-md">
+        <div className="relative mb-4 overflow-hidden rounded-3xl bg-blue-600/70 p-6 text-center shadow-3xl backdrop-blur-2xl">
           {/* Decorative circles */}
           <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/10" />
           <div className="absolute -bottom-10 -left-8 h-32 w-32 rounded-full bg-white/10" />
@@ -352,7 +352,7 @@ function Attendance() {
 
         {/* Group Counts */}
         <div className="mb-5 grid grid-cols-3 gap-2">
-          <div className="rounded-2xl border border-green-100 bg-green-50 p-3 text-center">
+          <div className="rounded-2xl border border-white/40 bg-white/40 p-3 text-center shadow-3xl shadow-black/50 inset-shadow-sm backdrop-blur-2xl">
             <p className="text-2xl font-black text-green-700">
               {getGroupCount("Adults")}
             </p>
@@ -360,7 +360,7 @@ function Attendance() {
             <p className="mt-1 text-xs font-semibold text-green-700">Adults</p>
           </div>
 
-          <div className="rounded-2xl border border-blue-100 bg-blue-50 p-3 text-center">
+          <div className="rounded-2xl border border-white/40 bg-white/40 p-3 text-center shadow-3xl shadow-black/50 inset-shadow-sm backdrop-blur-2xl">
             <p className="text-2xl font-black text-blue-700">
               {getGroupCount("Youth")}
             </p>
@@ -368,7 +368,7 @@ function Attendance() {
             <p className="mt-1 text-xs font-semibold text-blue-700">Youth</p>
           </div>
 
-          <div className="rounded-2xl border border-yellow-100 bg-yellow-50 p-3 text-center">
+          <div className="rounded-2xl border border-white/40 bg-white/40 p-3 text-center shadow-3xl shadow-black/50 inset-shadow-sm backdrop-blur-2xl">
             <p className="text-2xl font-black text-yellow-700">
               {getGroupCount("Children")}
             </p>
@@ -380,9 +380,9 @@ function Attendance() {
         </div>
 
         {/* Group Selector */}
-        <div className="mb-4">
+        <div className="mb-5 rounded-3xl border border-white/40 bg-white/35 p-4 shadow-3xl shadow-black/50 inset-shadow-sm backdrop-blur-2xl">
           <p className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-slate-400">
-            Select Group
+            SELECT GROUP
           </p>
 
           <div className="grid grid-cols-3 gap-2">
@@ -396,8 +396,8 @@ function Attendance() {
                 }}
                 className={`rounded-xl px-2 py-3 text-sm font-bold transition active:scale-95 ${
                   selectedGroup === group
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "bg-white text-slate-600 shadow-sm ring-1 ring-slate-100 hover:bg-slate-50"
+                    ? "bg-blue-500 text-white shadow-md"
+                    : "bg-white/75 text-slate-600 shadow-inner ring-1 ring-white/60 backdrop-blur-x1 hover:bg-white/75"
                 }`}
               >
                 {group}
@@ -415,10 +415,10 @@ function Attendance() {
 
             <input
               type="text"
-              placeholder={`Search ${selectedGroup.toLowerCase()}...`}
+              placeholder={`Search ${selectedGroup.toUpperCase()}...`}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-2xl border border-slate-200 bg-white py-4 pl-11 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+              className="w-full rounded-2xl border border-slate-200 bg-white/40 py-4 pl-11 pr-4 text-small text-white-700 shadow-3xl shadow-black/50 inset-shadow-sm outline-none transition placeholder:text-slate-400 focus:border-white-500 focus:ring-2 focus:ring-white-100"
             />
           </div>
         </div>
@@ -426,9 +426,9 @@ function Attendance() {
         {/* Members */}
         <div>
           <div className="mb-3 flex items-center justify-between px-1">
-            <h2 className="font-bold text-slate-800">{selectedGroup}</h2>
+            <h2 className="font-bold text-white/85">{selectedGroup}</h2>
 
-            <span className="text-xs font-medium text-slate-400">
+            <span className="text-xs font-medium text-white/50">
               {filteredMembers.length} member
               {filteredMembers.length !== 1 ? "s" : ""}
             </span>
@@ -446,27 +446,27 @@ function Attendance() {
                     onClick={() => markAttendance(member)}
                     className={`flex w-full items-center justify-between rounded-2xl border p-4 text-left transition active:scale-[0.98] ${
                       present
-                        ? "border-green-200 bg-green-50 shadow-sm"
-                        : "border-slate-100 bg-white shadow-sm hover:border-blue-100 hover:bg-blue-50/30"
+                        ? "border-white/40 bg-green-400/25 shadow-3xl backdrop-blur-2xl"
+                        : "border-white/40 bg-white/35 shadow-3xl backdrop-blur-2xl hover:bg-white/45"
                     }`}
                   >
                     <div className="flex min-w-0 items-center gap-3">
                       <div
                         className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${
                           present
-                            ? "bg-green-100 text-green-700"
-                            : "bg-slate-100 text-slate-500"
+                            ? "bg-green-300 text-green-700"
+                            : "bg-white/60 text-slate-600 shadow-inner backdrop-blur-xl"
                         }`}
                       >
                         {member.name.charAt(0).toUpperCase()}
                       </div>
 
                       <div className="min-w-0">
-                        <p className="truncate font-semibold text-slate-800">
+                        <p className="truncate font-semibold text-white/90">
                           {member.name}
                         </p>
 
-                        <p className="mt-0.5 text-xs text-slate-400">
+                        <p className="mt-0.5 text-xs text-black/50">
                           {member.group}
                         </p>
                       </div>
@@ -485,21 +485,21 @@ function Attendance() {
                           <span className="hidden sm:inline">Present</span>
                         </>
                       ) : (
-                        <span className="text-xl">○</span>
+                        <span className="text-xl text-white/50">○</span>
                       )}
                     </div>
                   </button>
                 );
               })
             ) : (
-              <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-7 text-center">
-                <div className="text-3xl text-slate-300">—</div>
+              <div className="rounded-2xl border border-dashed border-white/40 bg-white/30 p-7 text-center shadow-inner backdrop-blur-xl">
+                <div className="text-3xl text-white/40">—</div>
 
-                <p className="mt-2 font-semibold text-slate-600">
+                <p className="mt-2 font-semibold text-white/80">
                   No members found
                 </p>
 
-                <p className="mt-1 text-xs text-slate-400">
+                <p className="mt-1 text-xs text-white/50">
                   Try a different search or group.
                 </p>
               </div>
@@ -508,13 +508,13 @@ function Attendance() {
         </div>
 
         {/* Visitors Section */}
-        <div className="mt-9">
+        <div className="mt-9 rounded-3xl border border-white/40 bg-white/30 p-4 shadow-3xl backdrop-blur-2xl">
           <div className="mb-3 flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-bold text-slate-800">Visitors</h2>
+              <h2 className="text-lg font-bold text-white/90">Visitors</h2>
 
-              <p className="mt-0.5 text-sm text-slate-500">
-                {visitors.length} visitor
+              <p className="mt-0.5 text-sm text-white/55">
+                {visitors.length} Visitor
                 {visitors.length !== 1 ? "s" : ""} today
               </p>
             </div>
@@ -532,7 +532,7 @@ function Attendance() {
           {showVisitorForm && (
             <form
               onSubmit={addVisitor}
-              className="mb-4 rounded-3xl border border-slate-100 bg-white p-5 shadow-md"
+              className="mb-4 rounded-3xl border border-white/40 bg-white/40 p-5 shadow-2xl backdrop-blur-2xl"
             >
               <div className="mb-5 flex items-center justify-between">
                 <div>
@@ -577,7 +577,7 @@ function Attendance() {
                 <select
                   value={visitorPurpose}
                   onChange={(e) => setVisitorPurpose(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-black-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
                 >
                   <option>First Time Visitor</option>
                   <option>Visiting from Another Church</option>
@@ -631,7 +631,7 @@ function Attendance() {
               visitors.map((visitor) => (
                 <div
                   key={visitor.id}
-                  className="rounded-2xl border border-green-100 bg-green-50 p-4 shadow-sm"
+                  className="rounded-2xl border border-white/40 bg-green-400/50 p-4 shadow-2xl backdrop-blur-2xl"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-start gap-3">
@@ -640,7 +640,7 @@ function Attendance() {
                       </div>
 
                       <div className="min-w-0">
-                        <p className="truncate font-semibold text-slate-800">
+                        <p className="truncate font-semibold text-white/90">
                           {visitor.name}
                         </p>
 

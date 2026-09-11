@@ -138,62 +138,60 @@ function Dashboard() {
   const sundays = getSundaysInMonth(selectedMonth);
 
   const isPresent = (memberId, date) => {
-  return attendance.some(
-    (record) =>
-      Number(record.member_id) === Number(memberId) &&
-      String(record.date).slice(0, 10) === date,
-  );
-};
+    return attendance.some(
+      (record) =>
+        Number(record.member_id) === Number(memberId) &&
+        String(record.date).slice(0, 10) === date,
+    );
+  };
 
   const toggleAttendance = async (member, date) => {
-  if (isFutureDate(date)) {
-    return;
-  }
-
-  const existingRecord = attendance.find(
-    (record) =>
-      record.member_id === member.id &&
-      record.date === date,
-  );
-
-  try {
-    // Present → remove attendance
-    if (existingRecord) {
-      await api.deleteAttendance(existingRecord.id);
-    } else {
-      // Absent → mark present
-      const now = new Date();
-
-      const time =
-        String(now.getHours()).padStart(2, "0") +
-        ":" +
-        String(now.getMinutes()).padStart(2, "0") +
-        ":" +
-        String(now.getSeconds()).padStart(2, "0");
-
-      await api.addAttendance({
-        member_id: member.id,
-        date,
-        time,
-        status: "Present",
-      });
+    if (isFutureDate(date)) {
+      return;
     }
 
-    // Reload attendance directly from MySQL
-    const updatedAttendance = await api.getAttendance();
-
-    const monthAttendance = updatedAttendance.filter(
-      (record) =>
-        record.date >= `${selectedMonth}-01` &&
-        record.date <= `${selectedMonth}-31`,
+    const existingRecord = attendance.find(
+      (record) => record.member_id === member.id && record.date === date,
     );
 
-    setAttendance(monthAttendance);
-  } catch (error) {
-    console.error("Failed to update attendance:", error);
-    alert("Failed to update attendance.");
-  }
-};
+    try {
+      // Present → remove attendance
+      if (existingRecord) {
+        await api.deleteAttendance(existingRecord.id);
+      } else {
+        // Absent → mark present
+        const now = new Date();
+
+        const time =
+          String(now.getHours()).padStart(2, "0") +
+          ":" +
+          String(now.getMinutes()).padStart(2, "0") +
+          ":" +
+          String(now.getSeconds()).padStart(2, "0");
+
+        await api.addAttendance({
+          member_id: member.id,
+          date,
+          time,
+          status: "Present",
+        });
+      }
+
+      // Reload attendance directly from MySQL
+      const updatedAttendance = await api.getAttendance();
+
+      const monthAttendance = updatedAttendance.filter(
+        (record) =>
+          record.date >= `${selectedMonth}-01` &&
+          record.date <= `${selectedMonth}-31`,
+      );
+
+      setAttendance(monthAttendance);
+    } catch (error) {
+      console.error("Failed to update attendance:", error);
+      alert("Failed to update attendance.");
+    }
+  };
 
   const getMemberAttendanceCount = (memberId) => {
     return sundays.filter(
@@ -215,12 +213,12 @@ function Dashboard() {
       : 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 pb-28 pt-5">
+    <div className="min-h-screen bg-transparent px-4 pb-28 pt-5">
       <div className="mx-auto max-w-md">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white p-1.5 shadow-sm ring-1 ring-slate-100">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-transparent p-1.5">
               <img
                 src={churchLogo}
                 alt="COTF Church Logo"
@@ -229,11 +227,11 @@ function Dashboard() {
             </div>
 
             <div className="min-w-0">
-              <h1 className="text-xl font-bold text-slate-800">
+              <h1 className="text-xl font-bold text-white/75">
                 COTF Attendance
               </h1>
 
-              <p className="mt-0.5 text-sm text-slate-500">
+              <p className="mt-0.5 text-sm text-white/50">
                 Attendance Dashboard
               </p>
             </div>
@@ -241,8 +239,8 @@ function Dashboard() {
         </div>
 
         {/* Month Selector */}
-        <div className="mb-4 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
-          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">
+        <div className="mb-4 rounded-3xl bg-white/70 p-5 shadow-xl ring-1 ring-white/50 backdrop-blur-xl">
+          <p className="mb-2 text-s font-bold uppercase tracking-wide text-black-400">
             Attendance Month
           </p>
 
@@ -256,7 +254,7 @@ function Dashboard() {
 
         {/* Summary */}
         <div className="mb-5 grid grid-cols-2 gap-3">
-          <div className="rounded-2xl bg-blue-600 p-4 shadow-sm">
+          <div className="rounded-2xl border border-black/30 bg-blue-500/40 p-4 shadow-2xl backdrop-blur-2xl">
             <p className="text-xs font-semibold text-blue-100">
               Active Members
             </p>
@@ -266,7 +264,7 @@ function Dashboard() {
             </p>
           </div>
 
-          <div className="rounded-2xl bg-green-600 p-4 shadow-sm">
+          <div className="rounded-2xl border border-black/30 bg-green-600/75 p-4 shadow-2xl backdrop-blur-2xl">
             <p className="text-xs font-semibold text-green-100">
               Attendance Rate
             </p>
@@ -280,23 +278,23 @@ function Dashboard() {
         {/* Month Title */}
         <div className="mb-3 flex items-center justify-between px-1">
           <div>
-            <h2 className="font-bold text-slate-800">
+            <h2 className="font-bold text-white">
               {getMonthName(selectedMonth)}
             </h2>
 
-            <p className="mt-0.5 text-xs text-slate-400">
+            <p className="mt-0.5 text-xs text-white/60">
               {members.length} active member
               {members.length !== 1 ? "s" : ""}
             </p>
           </div>
 
-          <span className="rounded-full bg-yellow-100 px-3 py-1.5 text-xs font-bold text-yellow-700">
+          <span className="rounded-full bg-yellow-300/80 px-3 py-1.5 text-xs font-bold text-yellow-900 shadow-lg">
             Sunday Morning
           </span>
         </div>
 
         {/* Attendance Table */}
-        <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-100">
+        <div className="overflow-hidden rounded-3xl border border-white/40 bg-white/70 shadow-2xl backdrop-blur-2xl">
           {loading ? (
             <div className="p-8 text-center">
               <p className="text-sm font-medium text-slate-400">
@@ -319,8 +317,8 @@ function Dashboard() {
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-sm">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50">
-                    <th className="sticky left-0 z-10 min-w-[150px] bg-slate-50 px-4 py-4 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
+                  <tr className="border-b border-white/20 bg-white/50">
+                    <th className="sticky left-0 z-10 min-w-[150px] bg-white/90 px-4 py-4 text-left text-xs font-bold uppercase tracking-wide text-slate-600 backdrop-blur-xl">
                       Member
                     </th>
 
@@ -347,7 +345,7 @@ function Dashboard() {
                       <tr
                         key={member.id}
                         className={`border-b border-slate-100 last:border-0 ${
-                          index % 2 === 0 ? "bg-white" : "bg-slate-50/50"
+                          index % 2 === 0 ? "bg-white" : "bg-white"
                         }`}
                       >
                         {/* Member */}

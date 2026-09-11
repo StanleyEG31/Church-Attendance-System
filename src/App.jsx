@@ -7,8 +7,9 @@ import BottomNav from "./components/BottomNav";
 import Dashboard from "./pages/Dashboard";
 import SyncOverlay from "./components/SyncOverlay";
 import { api } from "./api";
+import AuroraBackground from "./components/AuroraBackground"
 
-const TEST_MODE = true;
+const TEST_MODE = false;
 
 function App() {
   const today = new Date().getDay();
@@ -76,6 +77,7 @@ function App() {
 
       {/* App Content */}
       {TEST_MODE || isSunday ? (
+        <AuroraBackground>
         <div className="pb-20">
           {/* Page */}
           {activePage === "dashboard" && <Dashboard />}
@@ -91,11 +93,12 @@ function App() {
           {/* Bottom Navigation */}
           <BottomNav activePage={activePage} setActivePage={setActivePage} />
         </div>
+        </AuroraBackground>
       ) : (
         <div
           className="min-h-screen flex items-center justify-center bg-cover bg-center relative"
           style={{
-            backgroundImage: "url('../public/COTF_Background.jpg')",
+            backgroundImage: "url('/COTF_Background.jpg')",
           }}
         >
           {/* Light transparent overlay */}
@@ -105,7 +108,7 @@ function App() {
           <div className="relative z-10 w-[90%] max-w-md bg-white/95 rounded-3xl shadow-xl p-8 text-center">
             {/* Logo */}
             <img
-              src="../public/COTF-LOGO.png"
+              src="/COTF-LOGO.png"
               alt="COTF"
               className="w-24 h-24 mx-auto mb-5 object-cover rounded-full"
             />

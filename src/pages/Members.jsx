@@ -154,12 +154,12 @@ function Members() {
   ).length;
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 pb-28 pt-6">
+    <div className="min-h-screen px-4 pb-28 pt-6">
       <div className="mx-auto max-w-md">
         {/* Header */}
         <div className="mb-6">
           <div className="mb-3 flex items-center gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white p-1 shadow-sm ring-1 ring-slate-100">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-transparent p-1.5">
               <img
                 src={churchLogo}
                 alt="COTF Church Logo"
@@ -168,24 +168,24 @@ function Members() {
             </div>
 
             <div>
-              <h1 className="text-2xl font-extrabold tracking-tight text-slate-800">
+              <h1 className="text-2xl font-extrabold tracking-tight text-white/90">
                 MEMBERS
               </h1>
             </div>
           </div>
 
-          <p className="text-sm text-slate-500">Manage your church members</p>
+          <p className="text-sm text-white/55">Manage your church members</p>
         </div>
 
         {/* Member Overview */}
-        <div className="mb-5 overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-100">
-          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+        <div className="mb-5 overflow-hidden rounded-3xl border border-white/50 bg-white/15 shadow-[0_12px_35px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+          <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
             <div>
-              <p className="text-sm font-semibold text-slate-700">
+              <p className="text-sm font-semibold text-white/90">
                 Member Overview
               </p>
 
-              <p className="mt-0.5 text-xs text-slate-400">
+              <p className="mt-0.5 text-xs text-white/55">
                 {members.length} registered{" "}
                 {members.length === 1 ? "member" : "members"}
               </p>
@@ -196,7 +196,7 @@ function Members() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 divide-x divide-slate-100">
+          <div className="grid grid-cols-3 divide-x divide-white/10">
             {/* Adults */}
             <div className="px-3 py-4 text-center">
               <div className="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100 text-sm">
@@ -245,18 +245,18 @@ function Members() {
         {/* Add Member */}
         <form
           onSubmit={addMember}
-          className="mb-5 overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-100"
+          className="mb-5 overflow-hidden rounded-3xl border border-white/15 bg-white/10 shadow-[0_12px_35px_rgba(0,0,0,0.28)] backdrop-blur-xl"
         >
-          <div className="border-b border-slate-100 px-5 py-4">
+          <div className="border-b border-white/10 px-5 py-4">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-100 text-lg">
                 +
               </div>
 
               <div>
-                <h2 className="font-bold text-slate-800">Add Member</h2>
+                <h2 className="font-bold text-white/90">Add Member</h2>
 
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-white/55">
                   Register a new church member
                 </p>
               </div>
@@ -264,7 +264,7 @@ function Members() {
           </div>
 
           <div className="p-5">
-            <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-500">
+            <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-white/55">
               Member Name
             </label>
 
@@ -273,26 +273,32 @@ function Members() {
               placeholder="Enter member name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mb-4 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+              className="mb-4 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-sm text-white/90 outline-none transition placeholder:text-white/35  focus:bg-white/10 focus:ring-4 focus:ring-white/10"
             />
 
-            <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-500">
+            <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-white/55">
               Group
             </label>
 
             <select
               value={group}
               onChange={(e) => setGroup(e.target.value)}
-              className="mb-4 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+              className="mb-4 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-sm text-white/90 outline-none transition placeholder:text-white/35  focus:bg-white/10 focus:ring-4 focus:ring-white/10"
             >
-              <option value="Adults">Adults</option>
-              <option value="Youth">Youth</option>
-              <option value="Children">Children</option>
+              <option className="bg-slate-900 text-white" value="Adults">
+                Adults
+              </option>
+              <option className="bg-slate-900 text-white" value="Youth">
+                Youth
+              </option>
+              <option className="bg-slate-900 text-white" value="Children">
+                Children
+              </option>
             </select>
 
             <button
               type="submit"
-              className="w-full rounded-2xl bg-blue-600 py-3.5 font-bold text-white shadow-sm transition hover:bg-blue-700 active:scale-[0.98]"
+              className="w-full rounded-2xl bg-blue-600 py-3.5 font-bold text-white shadow-[0_8px_20px_rgba(37,99,235,0.35)] transition hover:bg-blue-500 active:scale-[0.98]"
             >
               + Add Member
             </button>
@@ -311,16 +317,16 @@ function Members() {
               placeholder="Search members..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-12 pr-4 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+              className="w-full rounded-2xl border border-white/10 bg-white/5 py-3.5 pl-12 pr-4 text-sm text-white/90 shadow-[0_8px_20px_rgba(0,0,0,0.18)] outline-none backdrop-blur-xl transition placeholder:text-white/35 focus:border-white/20 focus:bg-white/10 focus:ring-4 focus:ring-white/10"
             />
           </div>
         </div>
 
         {/* Search Result Information */}
         <div className="mb-3 flex items-center justify-between px-1">
-          <p className="text-sm font-bold text-slate-700">Member List</p>
+          <p className="text-sm font-bold text-white/90">Member List</p>
 
-          <p className="text-xs font-medium text-slate-400">
+          <p className="text-xs font-medium text-white/45">
             {search.trim()
               ? `${filteredMembers.length} found`
               : `${members.length} total`}
@@ -330,16 +336,16 @@ function Members() {
         {/* Member List */}
         <div className="space-y-3">
           {filteredMembers.length === 0 ? (
-            <div className="rounded-3xl bg-white p-8 text-center shadow-sm ring-1 ring-slate-100">
-              <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-2xl">
+            <div className="rounded-3xl border border-white/15 bg-white/10 p-8 text-center shadow-[0_12px_35px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+              <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-white/10 text-2xl shadow-inner">
                 {members.length === 0 ? "👥" : "🔍"}
               </div>
 
-              <p className="font-semibold text-slate-700">
+              <p className="font-semibold text-white/90">
                 {members.length === 0 ? "No members yet" : "No members found"}
               </p>
 
-              <p className="mt-1 text-sm text-slate-400">
+              <p className="mt-1 text-sm text-white/45">
                 {members.length === 0
                   ? "Add your first church member above."
                   : "Try searching with a different name."}
@@ -352,21 +358,19 @@ function Members() {
               return (
                 <div
                   key={member.id}
-                  className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-100"
+                  className="overflow-hidden rounded-3xl border border-white/15 bg-white/10 shadow-[0_12px_35px_rgba(0,0,0,0.28)] backdrop-blur-xl"
                 >
                   {isEditing ? (
                     <div className="p-5">
                       <div className="mb-4 flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-yellow-100">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 shadow-inner">
                           ✏️
                         </div>
 
                         <div>
-                          <p className="font-bold text-slate-800">
-                            Edit Member
-                          </p>
+                          <p className="font-bold text-white/90">Edit Member</p>
 
-                          <p className="text-xs text-slate-400">
+                          <p className="text-xs text-white/55">
                             Update member information
                           </p>
                         </div>
@@ -376,24 +380,39 @@ function Members() {
                         type="text"
                         value={editingName}
                         onChange={(e) => setEditingName(e.target.value)}
-                        className="mb-3 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                        className="mb-3 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-sm text-white/90 outline-none transition placeholder:text-white/35 focus:bg-white/10 focus:ring-4 focus:ring-white/10"
                       />
 
                       <select
                         value={editingGroup}
                         onChange={(e) => setEditingGroup(e.target.value)}
-                        className="mb-4 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                        className="mb-4 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-sm text-white/90 outline-none transition focus:bg-white/10 focus:ring-4 focus:ring-white/10"
                       >
-                        <option value="Adults">Adults</option>
-                        <option value="Youth">Youth</option>
-                        <option value="Children">Children</option>
+                        <option
+                          className="bg-slate-900 text-white"
+                          value="Adults"
+                        >
+                          Adults
+                        </option>
+                        <option
+                          className="bg-slate-900 text-white"
+                          value="Youth"
+                        >
+                          Youth
+                        </option>
+                        <option
+                          className="bg-slate-900 text-white"
+                          value="Children"
+                        >
+                          Children
+                        </option>
                       </select>
 
                       <div className="grid grid-cols-2 gap-2">
                         <button
                           type="button"
                           onClick={() => saveEdit(member.id)}
-                          className="rounded-2xl bg-green-600 py-3.5 font-bold text-white transition hover:bg-green-700 active:scale-[0.98]"
+                          className="rounded-2xl border border-green-400/20 bg-green-600/20 py-3.5 font-bold text-green-300 shadow-[0_8px_20px_rgba(22,163,74,0.15)] transition hover:bg-green-500/30 active:scale-[0.98]"
                         >
                           Save
                         </button>
@@ -401,7 +420,7 @@ function Members() {
                         <button
                           type="button"
                           onClick={cancelEdit}
-                          className="rounded-2xl bg-slate-100 py-3.5 font-bold text-slate-600 transition hover:bg-slate-200 active:scale-[0.98]"
+                          className="rounded-2xl border border-white/10 bg-white/20 py-3.5 font-bold text-white/70 shadow-[0_8px_20px_rgba(0,0,0,0.12)] transition hover:bg-white/15 active:scale-[0.98]"
                         >
                           Cancel
                         </button>
@@ -410,24 +429,24 @@ function Members() {
                   ) : (
                     <div className="flex items-center gap-3 p-4">
                       {/* Avatar */}
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-xl">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/15 text-xl shadow-inner">
                         👤
                       </div>
 
                       {/* Information */}
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-bold text-slate-800">
+                        <p className="truncate font-bold text-white/90">
                           {member.name}
                         </p>
 
                         <div className="mt-1 flex items-center gap-2">
                           <span
-                            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
                               member.group === "Adults"
-                                ? "bg-blue-100 text-blue-700"
+                                ? "border-blue-400/20 bg-blue-500/15 text-blue-300"
                                 : member.group === "Youth"
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-yellow-100 text-yellow-700"
+                                  ? "border-green-400/20 bg-green-500/15 text-green-300"
+                                  : "border-yellow-400/20 bg-yellow-500/15 text-yellow-300"
                             }`}
                           >
                             {member.group}
@@ -440,7 +459,7 @@ function Members() {
                         <button
                           type="button"
                           onClick={() => startEditing(member)}
-                          className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-sm text-blue-600 transition hover:bg-blue-100 active:scale-95"
+                          className="flex h-9 w-9 items-center justify-center rounded-xl border border-yellow-400/20 bg-yellow-500/15 text-sm text-yellow-300 transition hover:bg-yellow-500/25 active:scale-95"
                           aria-label={`Edit ${member.name}`}
                         >
                           ✏️
@@ -449,7 +468,7 @@ function Members() {
                         <button
                           type="button"
                           onClick={() => deleteMember(member.id)}
-                          className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-sm text-red-500 transition hover:bg-red-100 active:scale-95"
+                          className="flex h-9 w-9 items-center justify-center rounded-xl border border-red-400/20 bg-red-500/15 text-sm text-red-300 transition hover:bg-red-500/25 active:scale-95"
                           aria-label={`Delete ${member.name}`}
                         >
                           🗑️

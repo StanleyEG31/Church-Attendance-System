@@ -279,7 +279,7 @@ const restoreData = (event) => {
 }
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-5 pb-8">
+    <div className="min-h-screen px-4 py-5 pb-8">
       <div className="mx-auto max-w-md">
 
         {/* Header */}
@@ -287,7 +287,7 @@ const restoreData = (event) => {
 
           <div className="flex items-center gap-3">
 
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white p-1.5 shadow-sm ring-1 ring-slate-100">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-transparent p-1.5">
               <img
                 src={churchLogo}
                 alt="COTF Church Logo"
@@ -297,11 +297,11 @@ const restoreData = (event) => {
 
             <div className="min-w-0">
 
-              <h1 className="text-xl font-bold text-slate-800">
+              <h1 className="text-xl font-bold text-white/90">
                 Settings
               </h1>
 
-              <p className="mt-0.5 text-sm text-slate-500">
+              <p className="mt-0.5 text-sm text-white/55">
                 Manage your attendance data
               </p>
 
@@ -313,13 +313,13 @@ const restoreData = (event) => {
 
         {/* Message */}
         {message && (
-          <div className="mb-5 flex items-start gap-3 rounded-2xl border border-green-100 bg-green-50 p-4">
+          <div className="mb-5 flex items-start gap-3 rounded-2xl border border-green-400/20 bg-green-500/10 p-4 shadow-[0_8px_20px_rgba(0,0,0,0.12)]">
 
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-500 text-sm font-bold text-white">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-green-400/20 bg-green-500/20 text-sm font-bold text-green-300">
               ✓
             </div>
 
-            <p className="pt-1 text-sm font-semibold text-green-700">
+            <p className="pt-1 text-sm font-semibold text-green-300">
               {message}
             </p>
 
@@ -327,15 +327,15 @@ const restoreData = (event) => {
         )}
 
         {/* Backup */}
-        <div className="mb-4 overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-sm">
+        <div className="mb-4 overflow-hidden rounded-3xl border border-white/15 bg-white/10 shadow-[0_12px_35px_rgba(0,0,0,0.28)] backdrop-blur-xl">
 
-          <div className="h-1.5 bg-blue-600" />
+          <div className="h-1.5 bg-blue-500/60" />
 
           <div className="p-5">
 
             <div className="flex items-start gap-3">
 
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-blue-400/20 bg-blue-500/15 text-blue-300">
                 <span className="text-lg font-bold">
                   ↓
                 </span>
@@ -343,11 +343,11 @@ const restoreData = (event) => {
 
               <div>
 
-                <h2 className="text-lg font-bold text-slate-800">
+                <h2 className="text-lg font-bold text-white/90">
                   Backup Data
                 </h2>
 
-                <p className="mt-1 text-sm leading-5 text-slate-500">
+                <p className="mt-1 text-sm leading-5 text-white/55">
                   Save your members and attendance records
                   to a backup file.
                 </p>
@@ -359,7 +359,7 @@ const restoreData = (event) => {
             <button
               type="button"
               onClick={backupData}
-              className="mt-5 w-full rounded-xl bg-blue-600 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 active:scale-[0.98]"
+              className="mt-5 w-full rounded-2xl border border-blue-400/20 bg-blue-500/20 py-3.5 text-sm font-bold text-blue-300 shadow-[0_8px_20px_rgba(0,0,0,0.15)] transition hover:bg-blue-500/30 active:scale-[0.98]"
             >
               Download Backup
             </button>
@@ -369,15 +369,15 @@ const restoreData = (event) => {
         </div>
 
         {/* Restore */}
-        <div className="mb-4 overflow-hidden rounded-3xl border border-green-100 bg-white shadow-sm">
+        <div className="mb-4 overflow-hidden rounded-3xl border border-white/15 bg-white/10 shadow-[0_12px_35px_rgba(0,0,0,0.28)] backdrop-blur-xl">
 
-          <div className="h-1.5 bg-green-600" />
+          <div className="h-1.5 bg-green-500/60" />
 
           <div className="p-5">
 
             <div className="flex items-start gap-3">
 
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-green-50 text-green-600">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-green-400/20 bg-green-500/15 text-green-300">
                 <span className="text-lg font-bold">
                   ↑
                 </span>
@@ -385,11 +385,11 @@ const restoreData = (event) => {
 
               <div>
 
-                <h2 className="text-lg font-bold text-slate-800">
+                <h2 className="text-lg font-bold text-white/90">
                   Restore Data
                 </h2>
 
-                <p className="mt-1 text-sm leading-5 text-slate-500">
+                <p className="mt-1 text-sm leading-5 text-white/55">
                   Restore members and attendance from a
                   backup file.
                 </p>
@@ -398,7 +398,7 @@ const restoreData = (event) => {
 
             </div>
 
-            <label className="mt-5 block w-full cursor-pointer rounded-xl border border-green-200 bg-green-50 py-3.5 text-center text-sm font-bold text-green-700 transition hover:bg-green-100 active:scale-[0.98]">
+            <label className="mt-5 block w-full cursor-pointer rounded-2xl border border-green-400/20 bg-green-500/15 py-3.5 text-center text-sm font-bold text-green-300 transition hover:bg-green-500/25 active:scale-[0.98]">
 
               Choose Backup File
 
@@ -416,15 +416,15 @@ const restoreData = (event) => {
         </div>
 
         {/* Clear Attendance */}
-        <div className="mb-4 overflow-hidden rounded-3xl border border-red-100 bg-white shadow-sm">
+        <div className="mb-4 overflow-hidden rounded-3xl border border-white/15 bg-white/10 shadow-[0_12px_35px_rgba(0,0,0,0.28)] backdrop-blur-xl">
 
-          <div className="h-1.5 bg-red-500" />
+          <div className="h-1.5 bg-red-500/60" />
 
           <div className="p-5">
 
             <div className="flex items-start gap-3">
 
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-500">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-red-400/20 bg-red-500/15 text-red-300">
                 <span className="text-lg font-bold">
                   ×
                 </span>
@@ -432,11 +432,11 @@ const restoreData = (event) => {
 
               <div>
 
-                <h2 className="text-lg font-bold text-slate-800">
+                <h2 className="text-lg font-bold text-white/90">
                   Clear Attendance History
                 </h2>
 
-                <p className="mt-1 text-sm leading-5 text-slate-500">
+                <p className="mt-1 text-sm leading-5 text-white/55">
                   Delete all attendance records while
                   keeping your members.
                 </p>
@@ -448,7 +448,7 @@ const restoreData = (event) => {
             <button
               type="button"
               onClick={clearAttendanceHistory}
-              className="mt-5 w-full rounded-xl bg-red-500 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-red-600 active:scale-[0.98]"
+              className="mt-5 w-full rounded-2xl border border-red-400/20 bg-red-500/20 py-3.5 text-sm font-bold text-red-300 shadow-[0_8px_20px_rgba(0,0,0,0.15)] transition hover:bg-red-500/30 active:scale-[0.98]"
             >
               Clear Attendance History
             </button>
@@ -458,21 +458,21 @@ const restoreData = (event) => {
         </div>
 
         {/* Warning */}
-        <div className="mt-6 rounded-2xl border border-yellow-200 bg-yellow-50 p-4">
+        <div className="mt-6 rounded-2xl border border-yellow-400/20 bg-yellow-500/10 p-4 shadow-[0_8px_20px_rgba(0,0,0,0.12)]">
 
           <div className="flex items-start gap-3">
 
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-yellow-100 text-yellow-700">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-yellow-400/20 bg-yellow-500/15 text-yellow-300">
               !
             </div>
 
             <div>
 
-              <p className="text-sm font-bold text-yellow-800">
+              <p className="text-sm font-bold text-yellow-300">
                 Keep your data safe
               </p>
 
-              <p className="mt-1 text-xs leading-5 text-yellow-700">
+              <p className="mt-1 text-xs leading-5 text-yellow-300/70">
                 Keep a backup of your attendance data in a
                 safe location. If the phone is lost or its
                 browser data is cleared, local data may be

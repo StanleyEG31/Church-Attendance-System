@@ -28,7 +28,7 @@ function BottomNav({ activePage, setActivePage }) {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white/95 shadow-[0_-4px_20px_rgba(15,23,42,0.08)] backdrop-blur-md">
+    <nav className="fixed bottom-0 left-0 right-0 z-50">
       <div className="mx-auto flex max-w-md">
         {navItems.map((item) => {
           const isActive = activePage === item.id;
@@ -46,7 +46,7 @@ function BottomNav({ activePage, setActivePage }) {
             >
               {/* Active indicator */}
               {isActive && (
-                <span className="absolute top-0 h-1 w-10 rounded-b-full bg-blue-600" />
+                <span className="absolute top-0 h-1 w-10 rounded-b-full" />
               )}
 
               {/* Icon */}
