@@ -9,7 +9,7 @@ import SyncOverlay from "./components/SyncOverlay";
 import { api } from "./api";
 import AuroraBackground from "./components/AuroraBackground"
 
-const TEST_MODE = false;
+const TEST_MODE = true;
 
 function App() {
   const today = new Date().getDay();
