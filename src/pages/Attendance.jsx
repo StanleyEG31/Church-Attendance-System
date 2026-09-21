@@ -2,9 +2,6 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import churchLogo from "../assets/COTF-LOGO.png";
 
-// TEMPORARY TEST MODE
-// Change this to false before final deployment.
-const TEST_MODE = false;
 
 function getSessionDate() {
   const today = new Date();
@@ -13,17 +10,7 @@ function getSessionDate() {
   const month = String(today.getMonth() + 1).padStart(2, "0");
   const day = String(today.getDate()).padStart(2, "0");
 
-  const localDate = `${year}-${month}-${day}`;
-
-  if (TEST_MODE) {
-    return localDate;
-  }
-
-  if (today.getDay() !== 0) {
-    return null;
-  }
-
-  return localDate;
+  return `${year}-${month}-${day}`;
 }
 
 function Attendance() {
@@ -32,7 +19,6 @@ function Attendance() {
   const [members, setMembers] = useState([]);
   const [attendance, setAttendance] = useState([]);
   const [visitors, setVisitors] = useState([]);
-  const [isSunday, setIsSunday] = useState(false);
 
   // Visitor form
   const [showVisitorForm, setShowVisitorForm] = useState(false);
@@ -56,11 +42,6 @@ function Attendance() {
             sensitivity: "base",
           }),
         );
-
-      const today = new Date();
-      const sunday = today.getDay() === 0;
-
-      setIsSunday(sunday);
 
       const sessionDate = getSessionDate();
 
@@ -256,45 +237,6 @@ function Attendance() {
 
   const isPresent = (memberId) => {
     return attendance.some((record) => record.member_id === memberId);
-  };
-
-  // Attendance is closed outside Sunday
-  if (!isSunday && !TEST_MODE) {
-    return (
-      <div className="min-h-screen bg-slate-50 px-4 py-6">
-        <div className="mx-auto max-w-md">
-          <div className="mt-16 overflow-hidden rounded-3xl bg-white shadow-md">
-            {/* Top Accent */}
-            <div className="h-2 bg-blue-600" />
-
-            <div className="p-8 text-center">
-              <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-3xl bg-white p-2 shadow-sm ring-1 ring-slate-100">
-                <img
-                  src={churchLogo}
-                  alt="COTF Church Logo"
-                  className="h-full w-full object-contain"
-                />
-              </div>
-
-              <h1 className="text-2xl font-bold text-slate-800">
-                Sunday Morning Service
-              </h1>
-
-              <div className="mx-auto mt-5 h-1 w-12 rounded-full bg-yellow-400" />
-
-              <p className="mt-5 font-medium text-slate-600">
-                Attendance is currently closed.
-              </p>
-
-              <p className="mt-2 text-sm leading-6 text-slate-400">
-                Attendance can only be recorded during the Sunday morning
-                service.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
   }
 
   return (
@@ -322,13 +264,6 @@ function Attendance() {
             </div>
           </div>
 
-          {TEST_MODE && (
-            <div className="mt-4 inline-flex rounded-full bg-yellow-100 px-3 py-1.5">
-              <span className="text-xs font-bold text-yellow-700">
-                TEST MODE
-              </span>
-            </div>
-          )}
         </div>
 
         {/* Total Attendance */}
